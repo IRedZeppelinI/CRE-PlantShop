@@ -1,10 +1,11 @@
-﻿using PlantShop.Domain.Entities.Shop;
+﻿using Microsoft.AspNetCore.Identity;
+using PlantShop.Domain.Entities.Shop;
 
 namespace PlantShop.Domain.Entities;
 
-public class User
+public class AppUser : IdentityUser
 {
-    public string Id { get; set; } = string.Empty;
+
     public string FullName { get; set; } = string.Empty;
     public string? Address { get; set; } 
 

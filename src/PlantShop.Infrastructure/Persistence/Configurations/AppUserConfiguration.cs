@@ -4,16 +4,11 @@ using PlantShop.Domain.Entities;
 
 namespace PlantShop.Infrastructure.Persistence.Configurations;
 
-public class UserConfiguration : IEntityTypeConfiguration<User>
+public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 {
-    public void Configure(EntityTypeBuilder<User> builder)
+    public void Configure(EntityTypeBuilder<AppUser> builder)
     {
-        builder.HasKey(u => u.Id);
-
-        //ID sera de UserIdentity
-        builder.Property(u => u.Id).ValueGeneratedNever();
-
-        
+                
         builder.Property(u => u.FullName)
             .IsRequired()
             .HasMaxLength(200);
@@ -23,7 +18,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         
         builder.HasMany(u => u.Orders)
-            .WithOne(o => o.Customer)    
+            .WithOne(o => o.User)    
             .HasForeignKey(o => o.UserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
