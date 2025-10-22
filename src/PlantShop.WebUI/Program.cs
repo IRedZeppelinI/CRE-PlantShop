@@ -1,6 +1,9 @@
+using PlantShop.Infrastructure;
 using PlantShop.WebUI.Components;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
