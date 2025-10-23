@@ -10,4 +10,8 @@
     <Folder Include="DTOs\Community\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PlantShop.Domain\PlantShop.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

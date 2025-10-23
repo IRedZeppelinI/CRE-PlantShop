@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PlantShop.Application\PlantShop.Application.csproj" />
     <ProjectReference Include="..\PlantShop.Domain\PlantShop.Domain.csproj" />
   </ItemGroup>
 
