@@ -33,6 +33,7 @@ public static class DependencyInjection
             .AddDefaultTokenProviders();
 
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IArticleRepository, ArticleRepository>();
 
         return services;
     }
