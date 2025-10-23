@@ -2,8 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PlantShop.Application.Interfaces.Persistence;
 using PlantShop.Domain.Entities;
 using PlantShop.Infrastructure.Persistence;
+using PlantShop.Infrastructure.Persistence.Repositories;
 
 namespace PlantShop.Infrastructure;
 
@@ -30,7 +32,7 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
-        
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
 
         return services;
     }

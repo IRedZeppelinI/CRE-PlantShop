@@ -147,7 +147,49 @@ public class CategoryRepositoryTests : IDisposable
         Assert.Null(resultAfterDelete); 
     }
 
+
+    // --- Test for UpdateAsync ---
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task UpdateAsync_WhenCategoryExists_ShouldUpdateCategoryInDatabase()
+    {
+        
+        var initialCategory = new Category { Name = "Original Name", Description = "Original Desc" };
+        await _context.Categories.AddAsync(initialCategory);
+        await _context.SaveChangesAsync();
+        
+        var categoryId = initialCategory.Id;
+        
+        _context.ChangeTracker.Clear();
+
+        
+        var updatedCategoryData = new Category
+        {
+            Id = categoryId, 
+            Name = "Updated Name",
+            Description = "Updated Desc"
+            
+        };
+
+        
+        await _repository.UpdateAsync(updatedCategoryData);
+
+        
+        await _context.SaveChangesAsync();
+
+        
+        _context.ChangeTracker.Clear();
+        var categoryFromDb = await _context.Categories.FindAsync(categoryId);
+
+        Assert.NotNull(categoryFromDb);
+        Assert.Equal(updatedCategoryData.Name, categoryFromDb.Name);
+        Assert.Equal(updatedCategoryData.Description, categoryFromDb.Description);
+    }
+
     
+
+
 
     public void Dispose()
     {

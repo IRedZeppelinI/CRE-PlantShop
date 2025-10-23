@@ -39,6 +39,8 @@ public class CategoryRepository : ICategoryRepository
 
     public Task UpdateAsync(Category category, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        _context.Categories.Update(category);
+        
+        return Task.CompletedTask;
     }
 }
