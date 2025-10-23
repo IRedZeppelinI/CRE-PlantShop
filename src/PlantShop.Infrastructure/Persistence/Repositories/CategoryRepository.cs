@@ -21,7 +21,8 @@ public class CategoryRepository : ICategoryRepository
 
     public Task DeleteAsync(Category category, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        _context.Categories.Remove(category);
+        return Task.CompletedTask;
     }
 
     public async Task<IEnumerable<Category>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -31,9 +32,9 @@ public class CategoryRepository : ICategoryRepository
                 .ToListAsync(cancellationToken);
     }
 
-    public Task<Category?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<Category?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return await _context.Categories.FindAsync(new object[] { id }, cancellationToken);
     }
 
     public Task UpdateAsync(Category category, CancellationToken cancellationToken = default)

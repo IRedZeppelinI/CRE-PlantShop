@@ -82,6 +82,73 @@ public class CategoryRepositoryTests : IDisposable
         Assert.Contains(results, c => c.Name == "Category B");
     }
 
+
+    // --- Tests for GetByIdAsync ---
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task GetByIdAsync_WhenCategoryExists_ShouldReturnCorrectCategory()
+    {
+        
+        var seedCategory = new Category { Name = "TestCategoryName", Description = "TestCategoryDescription" };
+        await _context.Categories.AddAsync(seedCategory);
+        await _context.SaveChangesAsync();
+        
+        _context.ChangeTracker.Clear();
+
+        
+        var result = await _repository.GetByIdAsync(seedCategory.Id); 
+
+        
+        Assert.NotNull(result);
+        Assert.Equal(seedCategory.Name, result.Name);
+        Assert.Equal(seedCategory.Description, result.Description);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task GetByIdAsync_WhenCategoryDoesNotExist_ShouldReturnNull()
+    {
+        int nonExistentId = 999;
+
+        var result = await _repository.GetByIdAsync(nonExistentId);
+
+        Assert.Null(result);
+    }
+
+
+    // --- Tests for DeleteAsync ---
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task DeleteAsync_WhenCategoryExists_ShouldMarkCategoryAsDeleted()
+    {
+        var categoryToDelete = new Category { Name = "DeleteMe", Description = "I will be deleted" };
+        await _context.Categories.AddAsync(categoryToDelete);
+        await _context.SaveChangesAsync();
+
+        _context.ChangeTracker.Clear();
+
+        
+        var categoryEntity = await _context.Categories.FindAsync(categoryToDelete.Id);
+        Assert.NotNull(categoryEntity); 
+
+        await _repository.DeleteAsync(categoryEntity); 
+        var stateBeforeSave = _context.Entry(categoryEntity).State; 
+
+        
+        Assert.Equal(EntityState.Deleted, stateBeforeSave); 
+
+        
+        await _context.SaveChangesAsync(); 
+
+        
+        var resultAfterDelete = await _context.Categories.FindAsync(categoryToDelete.Id); 
+        Assert.Null(resultAfterDelete); 
+    }
+
+    
+
     public void Dispose()
     {
         _context.Dispose();
