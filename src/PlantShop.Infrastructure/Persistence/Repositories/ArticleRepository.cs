@@ -53,4 +53,13 @@ public class ArticleRepository : IArticleRepository
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<Article>> GetFeaturedArticlesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Articles
+            .Include(a => a.Category) 
+            .Where(a => a.IsFeatured == true) 
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
 }

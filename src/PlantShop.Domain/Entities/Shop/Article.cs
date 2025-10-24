@@ -8,6 +8,7 @@ public class Article
     public decimal Price { get; set; }
     public int StockQuantity { get; set; }
     public string? ImageUrl { get; set; }
+    public bool IsFeatured { get; set; } = false;
 
     public int CategoryId { get; set; }
     public Category Category { get; set; } = null!; 

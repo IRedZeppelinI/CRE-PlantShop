@@ -10,5 +10,7 @@ public interface IArticleRepository
     Task UpdateAsync(Article article, CancellationToken cancellationToken = default);
     Task DeleteAsync(Article article, CancellationToken cancellationToken = default);
     Task<IEnumerable<Article>> GetArticlesByCategoryAsync(int categoryId, CancellationToken cancellationToken = default);
-
+    Task<IEnumerable<Article>> GetFeaturedArticlesAsync(CancellationToken cancellationToken = default);
 }
+
+

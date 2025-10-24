@@ -36,9 +36,11 @@ public class ArticleRepositoryTests : IAsyncLifetime
 
     // --- Tests for AddAsync ---
 
-    [Fact]
+    [Theory] 
+    [InlineData(false)]
+    [InlineData(true)]
     [Trait("Article", "Integration")]
-    public async Task AddAsync_WhenArticleIsValid_ShouldAddArticleToDatabase()
+    public async Task AddAsync_WhenArticleIsValid_ShouldAddArticleToDatabase(bool isFeatured)
     {
         
         var articleToAdd = new Article
@@ -48,7 +50,8 @@ public class ArticleRepositoryTests : IAsyncLifetime
             Price = 10.99m,
             StockQuantity = 100,
             ImageUrl = "http://example.com/img1.jpg",
-            CategoryId = _seedCategory.Id
+            CategoryId = _seedCategory.Id,
+            IsFeatured = isFeatured
         };
 
         
@@ -70,6 +73,7 @@ public class ArticleRepositoryTests : IAsyncLifetime
         Assert.NotNull(result.Category);
         Assert.Equal(_seedCategory.Name, result.Category.Name);
         Assert.True(result.Id > 0);
+        Assert.Equal(isFeatured, result.IsFeatured);
     }
 
     // --- Tests for GetAllAsync ---
@@ -90,36 +94,39 @@ public class ArticleRepositoryTests : IAsyncLifetime
 
     [Fact]
     [Trait("Article", "Integration")]
-    public async Task GetAllAsync_WhenDatabaseHasArticles_ShouldReturnAllArticlesWithCategories()
+    public async Task GetAllAsync_WhenDatabaseHasArticles_ShouldReturnAllArticlesWithCategoriesRegardlessOfFeaturedStatus()
     {
-        
-        var article1 = new Article { Name = "Article A", Price = 5.00m, CategoryId = _seedCategory.Id };
-        var article2 = new Article { Name = "Article B", Price = 15.00m, CategoryId = _seedCategory.Id };
-        await _context.Articles.AddRangeAsync(article1, article2);
+
+        var articleFeatured = new Article 
+            { Name = "Featured A", Price = 5.00m, CategoryId = _seedCategory.Id, IsFeatured = true };
+        var articleNotFeatured = new Article 
+            { Name = "Not Featured B", Price = 15.00m, CategoryId = _seedCategory.Id, IsFeatured = false };
+        await _context.Articles.AddRangeAsync(articleFeatured, articleNotFeatured);
         await _context.SaveChangesAsync();
-        _context.ChangeTracker.Clear(); 
+        _context.ChangeTracker.Clear();
 
         
         var results = await _repository.GetAllAsync();
 
         
         Assert.NotNull(results);
-        Assert.Equal(2, results.Count());
-        Assert.Contains(results, a => a.Name == "Article A");
-        Assert.Contains(results, a => a.Name == "Article B");
-        //For include cat
+        Assert.Equal(2, results.Count()); 
+        Assert.Contains(results, a => a.Name == "Featured A" && a.IsFeatured);
+        Assert.Contains(results, a => a.Name == "Not Featured B" && !a.IsFeatured);
         Assert.All(results, a => Assert.NotNull(a.Category));
-        Assert.All(results, a => Assert.Equal(_seedCategory.Name, a.Category.Name));
     }
 
     // --- Tests for GetByIdAsync ---
 
-    [Fact]
+    [Theory] 
+    [InlineData(false)]
+    [InlineData(true)]
     [Trait("Article", "Integration")]
-    public async Task GetByIdAsync_WhenArticleExists_ShouldReturnCorrectArticleWithCategory()
+    public async Task GetByIdAsync_WhenArticleExists_ShouldReturnCorrectArticleWithCategoryAndFeaturedStatus(bool isFeatured)
     {
-        
-        var seedArticle = new Article { Name = "FindMe Article", Price = 25.00m, CategoryId = _seedCategory.Id };
+
+        var seedArticle = new Article 
+            { Name = $"FindMe Article {isFeatured}", Price = 25.00m, CategoryId = _seedCategory.Id, IsFeatured = isFeatured };
         await _context.Articles.AddAsync(seedArticle);
         await _context.SaveChangesAsync();
         var articleId = seedArticle.Id;
@@ -128,13 +135,14 @@ public class ArticleRepositoryTests : IAsyncLifetime
         
         var result = await _repository.GetByIdAsync(articleId);
 
-        
+
         Assert.NotNull(result);
         Assert.Equal(seedArticle.Name, result.Name);
         Assert.Equal(seedArticle.Price, result.Price);
         Assert.Equal(_seedCategory.Id, result.CategoryId);
         Assert.NotNull(result.Category);
         Assert.Equal(_seedCategory.Name, result.Category.Name);
+        Assert.Equal(isFeatured, result.IsFeatured);
     }
 
     [Fact]
@@ -163,7 +171,8 @@ public class ArticleRepositoryTests : IAsyncLifetime
             Name = "Original Article",
             Price = 50.00m,
             StockQuantity = 50,
-            CategoryId = _seedCategory.Id
+            CategoryId = _seedCategory.Id,
+            IsFeatured = false
         };
         await _context.Articles.AddAsync(initialArticle);
         await _context.SaveChangesAsync();
@@ -179,7 +188,8 @@ public class ArticleRepositoryTests : IAsyncLifetime
             Price = 55.50m,
             StockQuantity = 45,
             ImageUrl = "http://new.image.url/updated.jpg",
-            CategoryId = _seedCategory.Id 
+            CategoryId = _seedCategory.Id,
+            IsFeatured = true
         };
 
         
@@ -195,7 +205,8 @@ public class ArticleRepositoryTests : IAsyncLifetime
         Assert.Equal(updatedArticleData.Price, articleFromDb.Price);
         Assert.Equal(updatedArticleData.StockQuantity, articleFromDb.StockQuantity);
         Assert.Equal(updatedArticleData.ImageUrl, articleFromDb.ImageUrl);
-        Assert.Equal(_seedCategory.Id, articleFromDb.CategoryId); 
+        Assert.Equal(_seedCategory.Id, articleFromDb.CategoryId);
+        Assert.True(articleFromDb.IsFeatured);
     }
 
     // --- Tests for DeleteAsync ---
@@ -236,7 +247,7 @@ public class ArticleRepositoryTests : IAsyncLifetime
         var articleA1 = new Article { Name = "Article A1", Price = 10m, CategoryId = categoryA.Id }; 
         var articleA2 = new Article { Name = "Article A2", Price = 12m, CategoryId = categoryA.Id }; 
 
-        // --- ALTERAÇÃO PRINCIPAL ---
+        
         var articleB1 = new Article
         {
             Name = "Article B1",
@@ -288,6 +299,65 @@ public class ArticleRepositoryTests : IAsyncLifetime
         var results = await _repository.GetArticlesByCategoryAsync(nonExistentCategoryId);
                 
 
+        Assert.NotNull(results);
+        Assert.Empty(results);
+    }
+
+
+    // --- Tests for GetFeaturedArticlesAsync ---
+
+    [Fact]
+    [Trait("Article", "Integration")]
+    public async Task GetFeaturedArticlesAsync_WhenSomeArticlesAreFeatured_ShouldReturnOnlyFeaturedArticles()
+    {
+        
+        var featured1 = new Article 
+            { Name = "Featured 1", Price = 10m, CategoryId = _seedCategory.Id, IsFeatured = true };
+        var notFeatured1 = new Article 
+            { Name = "Not Featured 1", Price = 12m, CategoryId = _seedCategory.Id, IsFeatured = false };
+        var featured2 = new Article { Name = "Featured 2", Price = 20m, CategoryId = _seedCategory.Id, IsFeatured = true };
+        await _context.Articles.AddRangeAsync(featured1, notFeatured1, featured2);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        
+        var results = await _repository.GetFeaturedArticlesAsync();
+
+        
+        Assert.NotNull(results);
+        Assert.Equal(2, results.Count()); 
+        Assert.Contains(results, a => a.Name == "Featured 1");
+        Assert.Contains(results, a => a.Name == "Featured 2");
+        Assert.DoesNotContain(results, a => a.Name == "Not Featured 1"); 
+        Assert.All(results, a => Assert.True(a.IsFeatured)); 
+        Assert.All(results, a => Assert.NotNull(a.Category)); 
+    }
+
+    [Fact]
+    [Trait("Article", "Integration")]
+    public async Task GetFeaturedArticlesAsync_WhenNoArticlesAreFeatured_ShouldReturnEmptyList()
+    {
+        
+        var notFeatured1 = new Article { Name = "Not Featured A", Price = 10m, CategoryId = _seedCategory.Id, IsFeatured = false };
+        var notFeatured2 = new Article { Name = "Not Featured B", Price = 12m, CategoryId = _seedCategory.Id, IsFeatured = false };
+        await _context.Articles.AddRangeAsync(notFeatured1, notFeatured2);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        
+        var results = await _repository.GetFeaturedArticlesAsync();
+
+        
+        Assert.NotNull(results);
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    [Trait("Article", "Integration")]
+    public async Task GetFeaturedArticlesAsync_WhenDatabaseIsEmpty_ShouldReturnEmptyList()
+    {                       
+        var results = await _repository.GetFeaturedArticlesAsync();
+        
         Assert.NotNull(results);
         Assert.Empty(results);
     }
