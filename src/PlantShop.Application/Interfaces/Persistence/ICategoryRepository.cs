@@ -10,5 +10,4 @@ public interface ICategoryRepository
     Task AddAsync(Category category, CancellationToken cancellationToken = default);
     Task UpdateAsync(Category category, CancellationToken cancellationToken = default);
     Task DeleteAsync(Category category, CancellationToken cancellationToken = default);
-    Task<IEnumerable<Article>> GetArticlesByCategoryAsync(int categoryId, CancellationToken cancellationToken = default);
 }
