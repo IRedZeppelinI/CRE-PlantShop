@@ -6,7 +6,7 @@ using PlantShop.Infrastructure.Persistence.Repositories;
 namespace PlantShop.Infrastructure.IntegrationTests.Repositories;
 
 [Collection("DatabaseTests")]
-public class CategoryRepositoryTests : IDisposable
+public class CategoryRepositoryTests : IAsyncLifetime
 {
     private readonly ApplicationDbContext _context;
     private readonly CategoryRepository _repository;
@@ -17,6 +17,16 @@ public class CategoryRepositoryTests : IDisposable
         _repository = new CategoryRepository(_context);
     }
 
+    public Task InitializeAsync()
+    {
+        return Task.CompletedTask; 
+    }
+    
+    public Task DisposeAsync()
+    {
+        _context?.Dispose(); 
+        return Task.CompletedTask;
+    }
 
     // --- Tests for AddAsync ---
     [Fact]
@@ -186,13 +196,5 @@ public class CategoryRepositoryTests : IDisposable
         Assert.Equal(updatedCategoryData.Name, categoryFromDb.Name);
         Assert.Equal(updatedCategoryData.Description, categoryFromDb.Description);
     }
-
-    
-
-
-
-    public void Dispose()
-    {
-        _context.Dispose();
-    }
+        
 }
