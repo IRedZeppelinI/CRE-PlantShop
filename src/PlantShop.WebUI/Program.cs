@@ -1,4 +1,5 @@
 using PlantShop.Infrastructure;
+using PlantShop.Infrastructure.Persistence;
 using PlantShop.WebUI.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,28 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{    
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        try
+        {
+            // Obtém o DbContext
+            var context = services.GetRequiredService<ApplicationDbContext>();
+                        
+
+            await DataSeeder.SeedAsync(context);
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "An error occurred while seeding the database.");
+            throw;
+        }
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
