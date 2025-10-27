@@ -1,3 +1,4 @@
+using PlantShop.Application;
 using PlantShop.Infrastructure;
 using PlantShop.Infrastructure.Persistence;
 using PlantShop.WebUI.Components;
@@ -5,6 +6,7 @@ using PlantShop.WebUI.Components;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddApplicationServices();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -19,9 +21,7 @@ if (app.Environment.IsDevelopment())
         var services = scope.ServiceProvider;
         try
         {
-            // Obtém o DbContext
-            var context = services.GetRequiredService<ApplicationDbContext>();
-                        
+            var context = services.GetRequiredService<ApplicationDbContext>();                        
 
             await DataSeeder.SeedAsync(context);
         }
