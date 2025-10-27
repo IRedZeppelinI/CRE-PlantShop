@@ -62,4 +62,9 @@ public class ArticleRepository : IArticleRepository
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<bool> ExistsWithCategoryIdAsync(int categoryId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Articles.AnyAsync(a => a.CategoryId == categoryId, cancellationToken);
+    }
 }

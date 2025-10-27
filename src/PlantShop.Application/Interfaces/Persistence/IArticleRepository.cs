@@ -11,6 +11,7 @@ public interface IArticleRepository
     Task DeleteAsync(Article article, CancellationToken cancellationToken = default);
     Task<IEnumerable<Article>> GetArticlesByCategoryAsync(int categoryId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Article>> GetFeaturedArticlesAsync(CancellationToken cancellationToken = default);
+    Task<bool> ExistsWithCategoryIdAsync(int categoryId, CancellationToken cancellationToken = default);
 }
 
 
