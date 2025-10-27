@@ -1,4 +1,5 @@
-﻿using PlantShop.Application.Interfaces.Persistence;
+﻿using Microsoft.EntityFrameworkCore;
+using PlantShop.Application.Interfaces.Persistence;
 using PlantShop.Domain.Entities.Shop;
 
 namespace PlantShop.Infrastructure.Persistence.Repositories;
@@ -32,5 +33,10 @@ public class OrderItemRepository : IOrderItemRepository
     {
         _context.OrderItems.Update(orderItem);
         return Task.CompletedTask;
+    }
+
+    public async Task<bool> ExistsWithArticleIdAsync(int articleId, CancellationToken cancellationToken = default)
+    {
+        return await _context.OrderItems.AnyAsync(oi => oi.ArticleId == articleId, cancellationToken);
     }
 }
