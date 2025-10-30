@@ -1,0 +1,47 @@
+﻿@model PlantShop.Application.DTOs.Shop.ArticleDto
+@{
+    ViewData["Title"] = "Apagar Artigo";
+}
+
+<h1 class="text-danger">@ViewData["Title"]</h1>
+
+<h3 class="text-warning">Tem a certeza que quer apagar este artigo?</h3>
+<p class="text-danger">Esta ação não pode ser revertida.</p>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-body">
+        <h4 class="card-title">@Model.Name</h4>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-3">
+                Categoria
+            </dt>
+            <dd class="col-sm-9">
+                @Html.DisplayFor(model => model.CategoryName)
+            </dd>
+
+            <dt class="col-sm-3">
+                @Html.DisplayNameFor(model => model.Price)
+            </dt>
+            <dd class="col-sm-9">
+                @Model.Price.ToString("C")
+            </dd>
+
+            <dt class="col-sm-3">
+                Descrição
+            </dt>
+            <dd class="col-sm-9">
+                @Html.DisplayFor(model => model.Description)
+            </dd>
+        </dl>
+
+        <form asp-action="DeleteArticle" method="post">
+            <input type="hidden" asp-for="Id" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <button type="submit" class="btn btn-danger">Confirmar Apagar</button>
+            <a asp-action="Articles" class="btn btn-secondary ms-2">Cancelar</a>
+        </form>
+    </div>
+</div>
