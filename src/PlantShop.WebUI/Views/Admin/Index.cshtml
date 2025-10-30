@@ -1,0 +1,40 @@
+﻿@{
+    ViewData["Title"] = "BackOffice";
+}
+
+<div class="container mt-4">
+    <h1 class="display-4">Dashboard do BackOffice</h1>
+    <p class="lead">Bem-vindo à área de administração, @User.Identity.Name.</p>
+
+    <hr />
+
+    <div class="row g-3">
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-success">
+                        <i class="bi bi-tags-fill"></i> Gestão de Categorias
+                    </h5>
+                    <p class="card-text">
+                        Criar, ver, editar e apagar categorias de produtos.
+                    </p>
+                    <a asp-action="Categories" class="btn btn-primary">Gerir Categorias</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-success">
+                        <i class="bi bi-flower1"></i> Gestão de Artigos
+                    </h5>
+                    <p class="card-text">
+                        Adicionar novos artigos à loja, gerir stock e preços.
+                    </p>
+                    <a href="#" class="btn btn-secondary disabled">Gerir Artigos (Brevemente)</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

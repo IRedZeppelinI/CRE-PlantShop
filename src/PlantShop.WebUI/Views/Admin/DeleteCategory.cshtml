@@ -1,0 +1,37 @@
+﻿@model PlantShop.Application.DTOs.Shop.CategoryDto
+@{
+    ViewData["Title"] = "Apagar Categoria";
+}
+
+<h1 class="text-danger">@ViewData["Title"]</h1>
+
+<h3 class="text-warning">Tem a certeza que quer apagar esta categoria?</h3>
+<p class="text-danger">Esta ação não pode ser revertida.</p>
+
+<div class="mt-4">
+    <h4>Categoria</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Description)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Description)
+        </dd>
+    </dl>
+
+    <form asp-action="DeleteCategory" method="post">
+        <input type="hidden" asp-for="Id" />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <button type="submit" class="btn btn-danger">Confirmar Apagar</button>
+        <a asp-action="Categories" class="btn btn-secondary ms-2">Cancelar</a>
+    </form>
+</div>
