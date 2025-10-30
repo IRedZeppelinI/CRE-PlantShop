@@ -12,6 +12,15 @@ builder.Services.AddApplicationServices();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddDistributedMemoryCache(); 
+builder.Services.AddSession(options =>
+{
+    // A sessão expira após 20 minutos de inatividade
+    options.IdleTimeout = TimeSpan.FromMinutes(20);
+    // Garante que o cookie de sessão é essencial para o RGPD
+    options.Cookie.IsEssential = true;
+});
+
 var app = builder.Build();
 
 // Seed the database
@@ -49,6 +58,8 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseStatusCodePagesWithReExecute("/Home/NotFoundPage");
+
+app.UseSession();
 
 app.UseAuthorization();
 
