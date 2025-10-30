@@ -52,7 +52,8 @@ public class AccountController : Controller
         {
             _logger.LogInformation("Utilizador criou uma nova conta com password.");
 
-            // Faz o login automático do utilizador após o registo
+            await _userManager.AddToRoleAsync(user, "Customer");
+
             await _signInManager.SignInAsync(user, isPersistent: false);
 
             // Redireciona para a página principal

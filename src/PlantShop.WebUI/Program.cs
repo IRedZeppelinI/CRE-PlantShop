@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Identity;
+using PlantShop.Application;
+using PlantShop.Domain.Entities;
 using PlantShop.Infrastructure;
 using PlantShop.Infrastructure.Persistence;
-using PlantShop.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,25 +14,28 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Seed the database
+using (var scope = app.Services.CreateScope())
 {
-    using (var scope = app.Services.CreateScope())
+    var services = scope.ServiceProvider;
+    try
     {
-        var services = scope.ServiceProvider;
-        try
-        {
-            var context = services.GetRequiredService<ApplicationDbContext>();
+        var context = services.GetRequiredService<ApplicationDbContext>();
 
-            await DataSeeder.SeedAsync(context);
-        }
-        catch (Exception ex)
-        {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "An error occurred while seeding the database.");
-            throw;
-        }
+        var userManager = services.GetRequiredService<UserManager<AppUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        
+        await DataSeeder.SeedAsync(context, roleManager, userManager);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database.");
+        throw; // Falhar no arranque é preferível se o seed falhar
     }
 }
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
