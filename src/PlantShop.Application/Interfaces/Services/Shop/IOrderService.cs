@@ -17,5 +17,7 @@ public interface IOrderService
     Task<OrderDto?> GetOrderDetailsAsync(int orderId, CancellationToken cancellationToken = default);
         
     Task<IEnumerable<OrderDto>> GetOrdersForUserAsync(string userId, CancellationToken cancellationToken = default);
-        
+
+    Task<IEnumerable<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default);
+
 }

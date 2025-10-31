@@ -132,7 +132,15 @@ public class OrderService : IOrderService
     }
 
 
-    
+    public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default)
+    {        
+        var orders = await _unitOfWork.Orders.GetAllOrdersAsync(cancellationToken);
+                
+        return orders.Select(MapOrderToDto);
+    }
+
+
+
     private OrderDto MapOrderToDto(Order order)
     {
         return new OrderDto
