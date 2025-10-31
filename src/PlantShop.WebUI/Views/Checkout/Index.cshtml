@@ -1,0 +1,66 @@
+﻿@model PlantShop.WebUI.Models.Cart.CartViewModel
+@{
+    ViewData["Title"] = "Confirmar Encomenda";
+    var userAddress = ViewData["UserAddress"] as string;
+}
+
+<div class="container mt-4">
+    <h1 class="text-center mb-4" style="color: var(--primary-green);">@ViewData["Title"]</h1>
+
+    @if (TempData["CheckoutError"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["CheckoutError"]
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <h4 class="mb-3">Resumo dos Artigos</h4>
+            <ul class="list-group shadow-sm">
+                @foreach (var item in Model.Items)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="my-0">@item.ArticleName</h6>
+                            <small class="text-muted">Quantidade: @item.Quantity</small>
+                        </div>
+                        <span class="text-muted">@item.TotalPrice.ToString("C")</span>
+                    </li>
+                }
+                <li class="list-group-item d-flex justify-content-between bg-light">
+                    <span class="fw-bold">Total</span>
+                    <strong class="fw-bold">@Model.Total.ToString("C")</strong>
+                </li>
+            </ul>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm" style="background-color: var(--secondary-light-green); border: none;">
+                <div class="card-body p-4">
+                    <h4 class="card-title mb-3">Detalhes de Envio</h4>
+
+                    <div class="mb-3">
+                        <h6 class="mb-1">Morada de Envio:</h6>
+                        <p class="card-text">@userAddress</p>
+                        <a asp-action="Address" class="btn btn-sm btn-outline-secondary">Alterar Morada</a>
+                    </div>
+
+                    <hr />
+
+                    <h5 class="mb-3">Simulação de Pagamento</h5>
+                    @* <p class="text-muted small">Isto é um projeto académico. Ao clicar em "Confirmar", a encomenda será criada sem qualquer pagamento.</p> *@
+
+                    <form asp-action="ProcessCheckout" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-shield-check-fill"></i> Confirmar Encomenda
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

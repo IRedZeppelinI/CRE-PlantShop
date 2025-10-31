@@ -1,0 +1,40 @@
+﻿@model PlantShop.Application.DTOs.Shop.OrderDto
+@{
+    ViewData["Title"] = "Encomenda Confirmada";
+}
+
+<div class="container text-center mt-5">
+    <div class="py-5 px-4 rounded shadow-sm" style="background-color: var(--secondary-light-green);">
+        <span style="font-size: 4rem; color: var(--primary-green);">
+            <i class="bi bi-check-circle-fill"></i>
+        </span>
+        <h1 class="display-5 mt-3" style="color: var(--primary-green);">Obrigado pela sua encomenda!</h1>
+        <p class="lead">A sua encomenda foi recebida e está a ser processada.</p>
+        <hr class="my-4">
+
+        <p>
+            <strong>Número da Encomenda:</strong> #@Model.Id.ToString("D6")
+        </p>
+        <p>
+            <strong>Data:</strong> @Model.OrderDate.ToLocalTime().ToString("g")
+        </p>
+        <p>
+            <strong>Total:</strong> @Model.TotalPrice.ToString("C")
+        </p>
+        <p>
+            <strong>Estado:</strong> @Model.OrderStatus
+        </p>
+        <p>
+            <strong>Morada de Envio:</strong> @Model.Address
+        </p>
+
+        <div class="mt-4">
+            <a asp-controller="Shop" asp-action="Index" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-left"></i> Continuar a Comprar
+            </a>
+            <a asp-controller="User" asp-action="Profile" class="btn btn-outline-secondary btn-lg">
+                Ver Histórico de Encomendas
+            </a>
+        </div>
+    </div>
+</div>

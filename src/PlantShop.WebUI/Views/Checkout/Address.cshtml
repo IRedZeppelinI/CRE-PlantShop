@@ -1,0 +1,39 @@
+﻿@model PlantShop.WebUI.Models.Checkout.AddressViewModel
+@{
+    ViewData["Title"] = "Morada de Envio";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1 class="text-center" style="color: var(--primary-green);">@ViewData["Title"]</h1>
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info text-center">@TempData["InfoMessage"]</div>
+        }
+        else
+        {
+            <p class="text-center text-muted">Precisamos da sua morada para onde a encomenda será enviada.</p>
+        }
+
+        <hr />
+
+        <form asp-action="Address" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+            <div class="form-floating mb-3">
+                <textarea asp-for="Address" class="form-control" placeholder="Introduza a sua morada completa" style="height: 120px"></textarea>
+                <label asp-for="Address"></label>
+                <span asp-validation-for="Address" class="text-danger"></span>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">Guardar e Continuar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
