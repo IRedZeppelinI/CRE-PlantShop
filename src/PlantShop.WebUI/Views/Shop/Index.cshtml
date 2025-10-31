@@ -1,6 +1,8 @@
 ﻿@model PlantShop.WebUI.Models.Shop.ShopViewModel
 @{
     ViewData["Title"] = "Loja";
+
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
 }
 
 <div class="container mt-4">
@@ -57,11 +59,29 @@
                                     @article.Price.ToString("C")
                                 </h4>
 
-                                <div class="mt-auto">
+                                @* <div class="mt-auto">
                                     <a asp-controller="Shop" asp-action="Details" asp-route-id="@article.Id"
                                        class="btn btn-primary w-100">
                                         <i class="bi bi-search"></i> Ver Detalhes
                                     </a>
+                                </div> *@
+                                <div class="mt-auto">
+                                    <div class="d-grid gap-2">
+                                        <a asp-controller="Shop" asp-action="Details" asp-route-id="@article.Id"
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-search"></i> Detalhes
+                                        </a>
+
+                                        <form asp-controller="Cart" asp-action="Add" method="post" class="d-grid">
+                                            <input type="hidden" name="ArticleId" value="@article.Id" />
+                                            <input type="hidden" name="Quantity" value="1" /> <input type="hidden" name="returnUrl" value="@currentUrl" /> <button type="submit" class="btn btn-primary"
+                                                                                                                                                                   @(article.StockQuantity > 0 ? "" : "disabled")>
+
+                                                <i class="bi bi-cart-plus-fill"></i>
+                                                @(article.StockQuantity > 0 ? "Adicionar" : "Esgotado")
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>

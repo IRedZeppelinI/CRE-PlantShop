@@ -1,6 +1,8 @@
 ﻿@model PlantShop.Application.DTOs.Shop.ArticleDto
 @{
     ViewData["Title"] = Model.Name;
+
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
 }
 
 <div class="container mt-5">
@@ -32,6 +34,7 @@
             <form asp-controller="Cart" asp-action="Add" method="post">
 
                 <input type="hidden" name="ArticleId" value="@Model.Id" />
+                <input type="hidden" name="returnUrl" value="@currentUrl" />
 
                 @if (Model.StockQuantity > 0)
                 {

@@ -1,0 +1,103 @@
+﻿@model PlantShop.WebUI.Models.Cart.CartViewModel
+@{
+    ViewData["Title"] = "O seu Carrinho";
+}
+
+<div class="container mt-4">
+    <h1 class="text-center mb-4" style="color: var(--primary-green);">@ViewData["Title"]</h1>
+
+    @if (Model.Items.Count == 0)
+    {
+        <div class="card shadow-sm border-0 text-center p-4" style="max-width: 600px; margin: 40px auto; background-color: var(--secondary-light-green);">
+            <div class="card-body">
+                <h4 class="card-title">O seu carrinho está vazio.</h4>
+                <p class="card-text text-muted">Continue a comprar para adicionar artigos.</p>
+                <a asp-controller="Shop" asp-action="Index" class="btn btn-primary mt-2">Ver Artigos</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+
+            <div class="col-lg-8">
+                <ul class="list-group shadow-sm">
+                    @foreach (var item in Model.Items)
+                    {
+                        <li class="list-group-item p-3">
+                            <div class="row g-3 align-items-center">
+
+                                <div class="col-md-2 col-3">
+                                    <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/placeholder.png" : item.ImageUrl)"
+                                         alt="@item.ArticleName" class="img-fluid rounded border" />
+                                </div>
+
+                                <div class="col-md-4 col-9">
+                                    <h5 class="mb-0">@item.ArticleName</h5>
+                                    <small class="text-muted">Preço: @item.UnitPrice.ToString("C")</small>
+                                    <p class="fw-bold mb-0 mt-1">Total: @item.TotalPrice.ToString("C")</p>
+                                </div>
+
+                                <div class="col-md-6 col-12 d-flex justify-content-md-end align-items-center">
+
+                                    <form asp-action="Update" asp-controller="Cart" method="post" class="d-flex align-items-center me-3">
+                                        <input type="hidden" name="articleId" value="@item.ArticleId" />
+                                        <button type="submit" name="quantity" value="@(item.Quantity - 1)" class="btn btn-outline-secondary btn-sm py-0 px-2" disabled="@(item.Quantity <= 1)">-</button>
+                                        <span class="mx-2 fw-bold fs-5">@item.Quantity</span>
+                                        <button type="submit" name="quantity" value="@(item.Quantity + 1)" class="btn btn-outline-secondary btn-sm py-0 px-2">+</button>
+                                    </form>
+
+                                    <form asp-action="Remove" asp-controller="Cart" method="post">
+                                        <input type="hidden" name="articleId" value="@item.ArticleId" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Remover</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm" style="background-color: var(--secondary-light-green); border: none; position: sticky; top: 20px;">
+                    <div class="card-body p-4">
+                        <h4 class="card-title text-center mb-3">Resumo</h4>
+                        <ul class="list-group list-group-flush">
+
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0" style="background-color: transparent;">
+                                Subtotal
+                                <span class="fw-bold">@Model.Subtotal.ToString("C")</span>
+                            </li>
+
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0" style="background-color: transparent;">
+                                Envio
+                                <span class="fw-bold">
+                                    @if (Model.ShippingCost == 0)
+                                    {
+                                        <text>Grátis</text>
+                                    }
+                                    else
+                                    {
+
+                                        @Model.ShippingCost.ToString("C")
+                                    }
+                                </span>
+                            </li>
+
+                            <li class="list-group-item d-flex justify-content-between align-items-center border-top fw-bold fs-5 px-0 pt-3 mt-2" style="background-color: transparent; color: var(--primary-green);">
+                                Total
+                                <span>@Model.Total.ToString("C")</span>
+                            </li>
+                        </ul>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <a asp-action="Index" asp-controller="Checkout" class="btn btn-primary btn-lg">Finalizar Compra</a>
+                            <a asp-controller="Shop" asp-action="Index" class="btn btn-outline-secondary">Continuar a Comprar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    }
+</div>
