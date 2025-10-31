@@ -1,0 +1,90 @@
+﻿@model PlantShop.Application.DTOs.Shop.OrderDto
+@{
+    ViewData["Title"] = $"Detalhes da Encomenda #{Model.Id.ToString("D6")}";
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Resumo da Encomenda</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Nº Encomenda:</dt>
+                    <dd class="col-sm-7">#@Model.Id.ToString("D6")</dd>
+
+                    <dt class="col-sm-5">Cliente:</dt>
+                    <dd class="col-sm-7">@Model.FullName</dd>
+
+                    <dt class="col-sm-5">Data:</dt>
+                    <dd class="col-sm-7">@Model.OrderDate.ToLocalTime().ToString("g")</dd>
+
+                    <dt class="col-sm-5">Estado:</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge
+                              @(Model.OrderStatus == "Pendente" ? "bg-warning text-dark" : "bg-success")">
+                            @Model.OrderStatus
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-5">Total:</dt>
+                    <dd class="col-sm-7 fw-bold fs-5" style="color: var(--primary-green);">
+                        @Model.TotalPrice.ToString("C")
+                    </dd>
+                </dl>
+
+                <hr />
+                <h6 class="mb-2">Morada de Envio</h6>
+                <p class="card-text text-muted">
+                    @Model.Address
+                </p>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Artigos da Encomenda (@Model.OrderItems.Count)</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @foreach (var item in Model.OrderItems)
+                    {
+                        <li class="list-group-item d-flex align-items-center">
+                            <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/placeholder.png" : item.ImageUrl)"
+                                 alt="@item.ArticleName"
+                                 style="width: 60px; height: 60px; object-fit: cover; border-radius: 5px; margin-right: 15px;" />
+
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">@item.ArticleName</h6>
+                                <small class="text-muted">
+                                    ID: @item.ArticleId | Preço: @item.UnitPrice.ToString("C")
+                                </small>
+                            </div>
+
+                            <div class="text-end">
+                                <span class="fw-bold fs-5">x @item.Quantity</span>
+                                <br />
+                                <span class="text-muted">
+                                    @((item.UnitPrice * item.Quantity).ToString("C"))
+                                </span>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a asp-action="Orders" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar à Lista de Encomendas
+    </a>
+</div>

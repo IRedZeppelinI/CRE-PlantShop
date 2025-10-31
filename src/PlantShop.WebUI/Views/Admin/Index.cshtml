@@ -1,40 +1,58 @@
-﻿@{
-    ViewData["Title"] = "BackOffice";
+﻿@model IEnumerable<PlantShop.Application.DTOs.Shop.CategoryDto>
+@{
+    ViewData["Title"] = "Dashboard do BackOffice";
 }
 
-<div class="container mt-4">
-    <h1 class="display-4">Dashboard do BackOffice</h1>
-    <p class="lead">Bem-vindo à área de administração, @User.Identity.Name.</p>
+<h1>@ViewData["Title"]</h1>
+<p>Bem-vindo à área de administração, @User.Identity?.Name.</p>
 
-    <hr />
+<hr />
 
-    <div class="row g-3">
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title text-success">
-                        <i class="bi bi-tags-fill"></i> Gestão de Categorias
-                    </h5>
-                    <p class="card-text">
-                        Criar, ver, editar e apagar categorias de produtos.
-                    </p>
-                    <a asp-action="Categories" class="btn btn-primary">Gerir Categorias</a>
-                </div>
-            </div>
-        </div>
+<div class="row g-4 mt-3">
 
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title text-success">
-                        <i class="bi bi-flower1"></i> Gestão de Artigos
-                    </h5>
-                    <p class="card-text">
-                        Adicionar novos artigos à loja, gerir stock e preços.
-                    </p>
-                    <a asp-action="Articles" class="btn btn-primary">Gerir Artigos</a>
-                </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center">
+                <span class="fs-1" style="color: var(--primary-green);">
+                    <i class="bi bi-box-seam-fill"></i>
+                </span>
+                <h5 class="card-title mt-2">Gestão de Encomendas</h5>
+                <p class="card-text text-muted">
+                    Consultar o histórico de encomendas e o estado.
+                </p>
+                <a asp-action="Orders" class="btn btn-primary">Gerir Encomendas</a>
             </div>
         </div>
     </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center">
+                <span class="fs-1" style="color: var(--primary-green);">
+                    <i class="bi bi-tags-fill"></i>
+                </span>
+                <h5 class="card-title mt-2">Gestão de Categorias</h5>
+                <p class="card-text text-muted">
+                    Criar, ver, editar e apagar categorias de produtos.
+                </p>
+                <a asp-action="Categories" class="btn btn-primary">Gerir Categorias</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body text-center">
+                <span class="fs-1" style="color: var(--primary-green);">
+                    <i class="bi bi-flower1"></i>
+                </span>
+                <h5 class="card-title mt-2">Gestão de Artigos</h5>
+                <p class="card-text text-muted">
+                    Adicionar novos artigos à loja, gerir stock e preços.
+                </p>
+                <a asp-action="Articles" class="btn btn-primary">Gerir Artigos</a>
+            </div>
+        </div>
+    </div>
+
 </div>

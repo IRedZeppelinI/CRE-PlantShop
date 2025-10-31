@@ -10,15 +10,18 @@ public class AdminController : Controller
 {
     private readonly IArticleService _articleService;
     private readonly ICategoryService _categoryService;
+    private readonly IOrderService _orderService;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         IArticleService articleService,
         ICategoryService categoryService,
+        IOrderService orderService,
         ILogger<AdminController> logger)
     {
         _articleService = articleService;
         _categoryService = categoryService;
+        _orderService = orderService;
         _logger = logger;
     }
 
@@ -26,9 +29,7 @@ public class AdminController : Controller
 
     // GET: /Admin/Index ou /Admin
     public IActionResult Index()
-    {
-        // Por agora, um simples dashboard.
-        // No futuro, podemos mostrar estatísticas.
+    {        
         return View();
     }
 
@@ -313,6 +314,52 @@ public class AdminController : Controller
         }
     }
     #endregion
+
+    #region Orders
+
+    // GET: /Admin/Orders
+    [HttpGet]
+    public async Task<IActionResult> Orders()
+    {
+        try
+        {            
+            var orders = await _orderService.GetAllOrdersAsync();
+            return View(orders);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao carregar a lista de encomendas no Admin.");
+            // TODO: Criar uma view de erro melhor para o Admin
+            return View("Error", "Home");
+        }
+    }
+
+    // GET: /Admin/OrderDetails/5
+    [HttpGet]
+    public async Task<IActionResult> OrderDetails(int id)
+    {
+        try
+        {            
+            var order = await _orderService.GetOrderDetailsAsync(id); //o repo usa Inlcude()
+            if (order == null)
+            {
+                _logger.LogWarning("Admin tentou aceder a encomenda inexistente (Id: {OrderId})", id);
+                return NotFound();
+            }
+
+            return View(order);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao carregar detalhes da encomenda {OrderId} no Admin.", id);
+            return View("Error", "Home");
+        }
+    }
+
+    // TODO: Adicionar [HttpPost] para atualizar o OrderStatus
+
+    #endregion
+
 
     private async Task PopulateCategoriesDropdown()
     {
