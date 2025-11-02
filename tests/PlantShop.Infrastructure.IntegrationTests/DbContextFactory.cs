@@ -12,12 +12,14 @@ public static class DbContextFactory
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.IntegrationTests.json")
+            .AddEnvironmentVariables()
             .Build();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlServer(connectionString,                
+            //.UseSqlServer(connectionString,                
+            .UseNpgsql(connectionString,
                 b => b.MigrationsAssembly("PlantShop.Infrastructure")
             )
             .Options;
