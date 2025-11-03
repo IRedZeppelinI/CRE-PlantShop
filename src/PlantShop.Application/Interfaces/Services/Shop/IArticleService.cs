@@ -12,9 +12,19 @@ public interface IArticleService
         
     Task<IEnumerable<ArticleDto>> GetFeaturedArticlesAsync(CancellationToken cancellationToken = default);
         
-    Task<ArticleDto> CreateArticleAsync(ArticleDto articleDto, CancellationToken cancellationToken = default);
+    Task<ArticleDto> CreateArticleAsync(
+        ArticleDto articleDto,
+        Stream? imageStream,
+        string? imageFileName, 
+        string? imageContentType,
+        CancellationToken cancellationToken = default);
         
-    Task UpdateArticleAsync(ArticleDto articleDto, CancellationToken cancellationToken = default);
+    Task UpdateArticleAsync(
+        ArticleDto articleDto,
+        Stream? imageStream,
+        string? imageFileName,
+        string? imageContentType,
+        CancellationToken cancellationToken = default);
         
     Task DeleteArticleAsync(int id, CancellationToken cancellationToken = default);
 }

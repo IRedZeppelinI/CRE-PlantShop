@@ -1,4 +1,4 @@
-﻿@model PlantShop.Application.DTOs.Shop.ArticleDto
+﻿@* @model PlantShop.Application.DTOs.Shop.ArticleDto
 @{
     ViewData["Title"] = "Editar Artigo";
 }
@@ -72,6 +72,99 @@
                     <div class="form-check mb-3">
                         <input asp-for="IsFeatured" class="form-check-input" type="checkbox" />
                         <label asp-for="IsFeatured" class="form-check-label">Em Destaque?</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 d-grid gap-2 d-md-flex justify-content-md-end">
+                <a asp-action="Articles" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar Alterações</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+} *@
+
+
+@model PlantShop.WebUI.Models.Admin.ArticleFormViewModel
+@{
+    ViewData["Title"] = "Editar Artigo";
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+
+<form asp-action="EditArticle" method="post" enctype="multipart/form-data" novalidate>
+
+    <input type="hidden" asp-for="Article.Id" />
+
+    <div class="row g-3">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Article.Name" class="form-label"></label>
+                        <input asp-for="Article.Name" class="form-control" />
+                        <span asp-validation-for="Article.Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Article.Description" class="form-label"></label>
+                        <textarea asp-for="Article.Description" class="form-control" rows="5"></textarea>
+                        <span asp-validation-for="Article.Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ImageFile" class="form-label">Nova Imagem (Opcional)</label>
+                        <input asp-for="ImageFile" class="form-control" type="file" accept="image/*" />
+                        <small class="text-muted">Selecione um novo ficheiro para substituir o atual.</small>
+                        <span asp-validation-for="ImageFile" class="text-danger"></span>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Article.ImageUrl))
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Imagem Atual:</label>
+                            <div>
+                                <img src="@Model.Article.ImageUrl" alt="@Model.Article.Name" style="max-height: 150px; border-radius: 5px;" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Article.Price" class="form-label"></label>
+                        <input asp-for="Article.Price" class="form-control" type="number" step="0.01" />
+                        <span asp-validation-for="Article.Price" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Article.StockQuantity" class="form-label">Stock</label>
+                        <input asp-for="Article.StockQuantity" class="form-control" type="number" />
+                        <span asp-validation-for="Article.StockQuantity" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Article.CategoryId" class="form-label">Categoria</label>
+                        <select asp-for="Article.CategoryId" class="form-select"
+                                asp-items="@(new SelectList(ViewBag.Categories, "Id", "Name"))">
+                            <option value="">-- Selecionar Categoria --</option>
+                        </select>
+                        <span asp-validation-for="Article.CategoryId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input asp-for="Article.IsFeatured" class="form-check-input" type="checkbox" />
+                        <label asp-for="Article.IsFeatured" class="form-check-label">Em Destaque?</label>
                     </div>
                 </div>
             </div>

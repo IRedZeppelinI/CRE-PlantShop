@@ -1,6 +1,8 @@
-﻿using PlantShop.Application.Interfaces.Services.Shop; 
+﻿using Microsoft.Extensions.Logging;
+using PlantShop.Application.DTOs.Shop;
+using PlantShop.Application.Interfaces.Infrastructure;
 using PlantShop.Application.Interfaces.Persistence; 
-using PlantShop.Application.DTOs.Shop; 
+using PlantShop.Application.Interfaces.Services.Shop; 
 using PlantShop.Domain.Entities.Shop; 
 
 namespace PlantShop.Application.Services.Shop;
@@ -8,11 +10,16 @@ namespace PlantShop.Application.Services.Shop;
 public class ArticleService : IArticleService 
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IFileStorageService _fileStorageService;
+    private readonly ILogger<ArticleService> _logger;
 
-    public ArticleService(IUnitOfWork unitOfWork)
+    public ArticleService(IUnitOfWork unitOfWork, IFileStorageService fileStorageService, ILogger<ArticleService> logger)
     {
         _unitOfWork = unitOfWork;
+        _fileStorageService = fileStorageService;
+        _logger = logger;
     }
+
 
     public async Task<IEnumerable<ArticleDto>> GetAllArticlesAsync(CancellationToken cancellationToken = default)
     {
@@ -43,7 +50,12 @@ public class ArticleService : IArticleService
         return articles.Select(MapArticleToDto);
     }
 
-    public async Task<ArticleDto> CreateArticleAsync(ArticleDto articleDto, CancellationToken cancellationToken = default)
+    public async Task<ArticleDto> CreateArticleAsync(
+        ArticleDto articleDto,
+        Stream? imageStream,
+        string? imageFileName,
+        string? imageContentType,
+        CancellationToken cancellationToken = default)
     {
         if (articleDto.CategoryId <= 0)
         {
@@ -55,6 +67,20 @@ public class ArticleService : IArticleService
         if (!categoryExists)
         {            
             throw new KeyNotFoundException($"Category with Id {articleDto.CategoryId} not found.");            
+        }
+
+        //upload imagem
+        if (imageStream != null && imageStream.Length > 0 && imageFileName != null && imageContentType != null)
+        {
+            var fileExtension = Path.GetExtension(imageFileName);
+            var newFileName = $"{Guid.NewGuid()}{fileExtension}";
+
+            _logger.LogInformation("A fazer upload do novo ficheiro: {FileName}", newFileName);
+
+            var imageUrl = await _fileStorageService.UploadAsync(
+                imageStream, newFileName, imageContentType, "articles");
+
+            articleDto.ImageUrl = imageUrl;
         }
 
         var articleEntity = new Article
@@ -77,7 +103,12 @@ public class ArticleService : IArticleService
     }
 
 
-    public async Task UpdateArticleAsync(ArticleDto articleDto, CancellationToken cancellationToken = default)
+    public async Task UpdateArticleAsync(
+        ArticleDto articleDto,
+        Stream? imageStream,
+        string? imageFileName,
+        string? imageContentType,
+        CancellationToken cancellationToken = default)
     {
         var articleEntity = await _unitOfWork.Articles.GetByIdAsync(articleDto.Id, cancellationToken);
 
@@ -101,16 +132,39 @@ public class ArticleService : IArticleService
             }
         }
 
+        string? oldImageUrl = articleEntity.ImageUrl;
+        string? newImageUrl = oldImageUrl;
+
+        //upload nova foto se existir
+        if (imageStream != null && imageStream.Length > 0 && imageFileName != null && imageContentType != null)
+        {
+            var fileExtension = Path.GetExtension(imageFileName);
+            var newFileName = $"{Guid.NewGuid()}{fileExtension}";
+
+            _logger.LogInformation("A fazer upload do ficheiro de substituição: {FileName}", newFileName);
+
+            newImageUrl = await _fileStorageService.UploadAsync(
+                imageStream, newFileName, imageContentType, "articles");
+        }
+
         articleEntity.Name = articleDto.Name;
         articleEntity.Description = articleDto.Description;
         articleEntity.Price = articleDto.Price;
         articleEntity.StockQuantity = articleDto.StockQuantity;
-        articleEntity.ImageUrl = articleDto.ImageUrl;
+        articleEntity.ImageUrl = newImageUrl;
         articleEntity.IsFeatured = articleDto.IsFeatured;
         articleEntity.CategoryId = articleDto.CategoryId;
                     
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        //delete foto antiga
+        bool imageHasChanged = oldImageUrl != newImageUrl;
+        if (imageHasChanged && !string.IsNullOrEmpty(oldImageUrl))
+        {
+            _logger.LogInformation("A apagar ficheiro antigo: {OldImageUrl}", oldImageUrl);
+            await _fileStorageService.DeleteAsync(oldImageUrl, "articles", cancellationToken);
+        }
     }
 
     
@@ -130,8 +184,16 @@ public class ArticleService : IArticleService
             throw new InvalidOperationException($"Cannot delete article '{articleEntity.Name}' (Id: {id}) because it exists in one or more orders.");
         }
 
+        string? imageUrlToDelete = articleEntity.ImageUrl;
+
         await _unitOfWork.Articles.DeleteAsync(articleEntity, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (!string.IsNullOrEmpty(imageUrlToDelete))
+        {
+            _logger.LogInformation("A apagar ficheiro associado: {ImageUrl}", imageUrlToDelete);
+            await _fileStorageService.DeleteAsync(imageUrlToDelete, "articles", cancellationToken);
+        }
     }
 
 

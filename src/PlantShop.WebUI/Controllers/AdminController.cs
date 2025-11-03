@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using PlantShop.Application.DTOs.Shop;
+using PlantShop.Application.Interfaces.Infrastructure;
 using PlantShop.Application.Interfaces.Services.Shop;
+using PlantShop.WebUI.Models.Admin;
 
 namespace PlantShop.WebUI.Controllers;
 
@@ -11,17 +14,20 @@ public class AdminController : Controller
     private readonly IArticleService _articleService;
     private readonly ICategoryService _categoryService;
     private readonly IOrderService _orderService;
+    private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         IArticleService articleService,
         ICategoryService categoryService,
         IOrderService orderService,
+        IFileStorageService fileStorageService,
         ILogger<AdminController> logger)
     {
         _articleService = articleService;
         _categoryService = categoryService;
         _orderService = orderService;
+        _fileStorageService = fileStorageService;
         _logger = logger;
     }
 
@@ -173,7 +179,7 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> Articles()
     {
-        // O ArticleDto já inclui o CategoryName, perfeito!
+        // O ArticleDto já inclui o CategoryName
         var articles = await _articleService.GetAllArticlesAsync();
         return View(articles);
     }
@@ -182,41 +188,64 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> CreateArticle()
     {
-        // Precisamos de carregar as categorias para o dropdown
+        var viewModel = new ArticleFormViewModel
+        {
+            Article = new ArticleDto { StockQuantity = 10, IsFeatured = false }
+        };
+
+        // carregar as categorias para o dropdown
         await PopulateCategoriesDropdown();
-        return View(new ArticleDto { StockQuantity = 10, IsFeatured = false }); // Valores por defeito
+        //return View(new ArticleDto { StockQuantity = 10, IsFeatured = false });
+        return View(viewModel);
     }
 
     // POST: /Admin/CreateArticle
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateArticle(ArticleDto articleDto)
+    public async Task<IActionResult> CreateArticle(ArticleFormViewModel viewModel)
     {
         if (!ModelState.IsValid)
         {
-            // Se o modelo falhar, recarrega o dropdown e retorna
             await PopulateCategoriesDropdown();
-            return View(articleDto);
+            return View(viewModel);
         }
 
         try
-        {
-            await _articleService.CreateArticleAsync(articleDto);
+        {            
+            Stream? imageStream = null;
+            string? imageFileName = null;
+            string? imageContentType = null;
+
+            if (viewModel.ImageFile != null && viewModel.ImageFile.Length > 0)
+            {
+                imageStream = viewModel.ImageFile.OpenReadStream();
+                imageFileName = viewModel.ImageFile.FileName;
+                imageContentType = viewModel.ImageFile.ContentType;
+            }
+
+            
+            await _articleService.CreateArticleAsync(
+                viewModel.Article,
+                imageStream,
+                imageFileName,
+                imageContentType);
+
+            
             return RedirectToAction(nameof(Articles));
         }
-        catch (KeyNotFoundException ex) // Se a CategoriaId for inválida
+        catch (KeyNotFoundException ex)
         {
             _logger.LogWarning(ex, "Tentativa de criar artigo com CategoriaId inválida.");
-            ModelState.AddModelError("CategoryId", ex.Message);
+            ModelState.AddModelError("Article.CategoryId", ex.Message);
             await PopulateCategoriesDropdown();
-            return View(articleDto);
+            return View(viewModel);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao criar artigo.");
             ModelState.AddModelError(string.Empty, "Ocorreu um erro ao criar o artigo.");
             await PopulateCategoriesDropdown();
-            return View(articleDto);
+            return View(viewModel);
         }
     }
 
@@ -224,50 +253,73 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> EditArticle(int id)
     {
-        var article = await _articleService.GetArticleByIdAsync(id);
-        if (article == null)
+        var articleDto = await _articleService.GetArticleByIdAsync(id);
+        if (articleDto == null)
         {
             return NotFound();
         }
 
+        // Criar o ViewModel
+        var viewModel = new ArticleFormViewModel
+        {
+            Article = articleDto
+        };
+
         await PopulateCategoriesDropdown();
-        return View(article);
+        return View(viewModel);
     }
 
     // POST: /Admin/EditArticle/5
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditArticle(int id, ArticleDto articleDto)
+    public async Task<IActionResult> EditArticle(int id, ArticleFormViewModel viewModel)
     {
-        if (id != articleDto.Id)
+        if (id != viewModel.Article.Id)
         {
             return BadRequest();
         }
 
+        // Validar o ModelState
         if (!ModelState.IsValid)
         {
             await PopulateCategoriesDropdown();
-            return View(articleDto);
+            return View(viewModel);
         }
 
         try
         {
-            await _articleService.UpdateArticleAsync(articleDto);
+            Stream? imageStream = null;
+            string? imageFileName = null;
+            string? imageContentType = null;
+
+            if (viewModel.ImageFile != null && viewModel.ImageFile.Length > 0)
+            {
+                imageStream = viewModel.ImageFile.OpenReadStream();
+                imageFileName = viewModel.ImageFile.FileName;
+                imageContentType = viewModel.ImageFile.ContentType;
+            }
+                        
+            await _articleService.UpdateArticleAsync(
+                viewModel.Article,
+                imageStream,
+                imageFileName,
+                imageContentType);
+                       
             return RedirectToAction(nameof(Articles));
         }
-        catch (KeyNotFoundException ex) // Se o Artigo ou Categoria não forem encontrados
+        catch (KeyNotFoundException ex)
         {
             _logger.LogWarning(ex, "Erro ao atualizar artigo (KeyNotFound).");
             ModelState.AddModelError(string.Empty, ex.Message);
             await PopulateCategoriesDropdown();
-            return View(articleDto);
+            return View(viewModel);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao editar artigo.");
             ModelState.AddModelError(string.Empty, "Ocorreu um erro ao editar o artigo.");
             await PopulateCategoriesDropdown();
-            return View(articleDto);
+            return View(viewModel);
         }
     }
 
@@ -365,4 +417,6 @@ public class AdminController : Controller
     {
         ViewBag.Categories = await _categoryService.GetAllCategoriesAsync();
     }
+
+    
 }

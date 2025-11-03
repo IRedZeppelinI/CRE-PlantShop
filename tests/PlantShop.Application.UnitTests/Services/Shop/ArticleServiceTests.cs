@@ -1,8 +1,10 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.Logging;
+using Moq;
+using PlantShop.Application.DTOs.Shop;
+using PlantShop.Application.Interfaces.Infrastructure;
 using PlantShop.Application.Interfaces.Persistence;
 using PlantShop.Application.Interfaces.Services.Shop;
 using PlantShop.Application.Services.Shop;
-using PlantShop.Application.DTOs.Shop;
 using PlantShop.Domain.Entities.Shop;
 
 namespace PlantShop.Application.UnitTests.Services.Shop;
@@ -13,6 +15,8 @@ public class ArticleServiceTests
     private readonly Mock<IArticleRepository> _mockArticleRepository;
     private readonly Mock<ICategoryRepository> _mockCategoryRepository; // Para validações
     private readonly Mock<IOrderItemRepository> _mockOrderItemRepository; // Para validação Delete
+    private readonly Mock<IFileStorageService> _mockFileStorageService;
+    private readonly Mock<ILogger<ArticleService>> _mockLogger;
 
     private readonly IArticleService _articleService;
 
@@ -22,16 +26,21 @@ public class ArticleServiceTests
         _mockCategoryRepository = new Mock<ICategoryRepository>();
         _mockOrderItemRepository = new Mock<IOrderItemRepository>();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
+        _mockFileStorageService = new Mock<IFileStorageService>();
+        _mockLogger = new Mock<ILogger<ArticleService>>();
 
         _mockUnitOfWork.Setup(uow => uow.Articles).Returns(_mockArticleRepository.Object);
         _mockUnitOfWork.Setup(uow => uow.Categories).Returns(_mockCategoryRepository.Object);
         _mockUnitOfWork.Setup(uow => uow.OrderItems).Returns(_mockOrderItemRepository.Object);
 
-        _articleService = new ArticleService(_mockUnitOfWork.Object);
+        _articleService = new ArticleService(
+            _mockUnitOfWork.Object,
+            _mockFileStorageService.Object,
+            _mockLogger.Object);
     }
 
     // Helper create Article
-    private Article CreateTestArticle(int id = 1, int categoryId = 1, bool isFeatured = false)
+    private Article CreateTestArticle(int id = 1, int categoryId = 1, bool isFeatured = false, string? imageUrl = null)
     {
         return new Article
         {
@@ -40,8 +49,21 @@ public class ArticleServiceTests
             Price = 10m * id,
             CategoryId = categoryId,
             IsFeatured = isFeatured,
+            ImageUrl = imageUrl,
             Category = new Category { Id = categoryId, Name = $"Category {categoryId}" } // Inclui Categoria mockada
         };
+    }
+
+    // Helper para criar um Mock de Stream
+    private Stream CreateMockStream()
+    {
+        var mockStream = new MemoryStream();
+        // Escreve alguns bytes para simular um ficheiro com conteúdo
+        var writer = new StreamWriter(mockStream);
+        writer.Write("mock file content");
+        writer.Flush();
+        mockStream.Position = 0;
+        return mockStream;
     }
 
     // --- GetAllArticlesAsync Tests ---
@@ -128,181 +150,177 @@ public class ArticleServiceTests
     // --- CreateArticleAsync Tests ---
 
     [Fact]
-    public async Task CreateArticleAsync_WithValidData_ShouldAddAndSaveAndReturnDto()
+    public async Task CreateArticleAsync_WithValidData_AndNoImage_ShouldAddAndSave()
     {
-        var inputDto = new ArticleDto { Name = "New", Price = 5m, CategoryId = 1, CategoryName = "Will Be Ignored" }; 
+        var inputDto = new ArticleDto { Name = "New", Price = 5m, CategoryId = 1 };
         Article addedArticle = null!;
         var existingCategory = new Category { Id = 1, Name = "Existing Cat" };
 
-        _mockCategoryRepository.Setup(r => r
-            .GetByIdAsync(inputDto.CategoryId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingCategory); 
+        _mockCategoryRepository.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(existingCategory);
 
-        _mockArticleRepository.Setup(r => r
-            .AddAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()))
-            .Callback<Article, CancellationToken>((a, ct) => { a.Id = 99; addedArticle = a; }) 
-            .Returns(Task.CompletedTask);
+        _mockArticleRepository.Setup(r => r.AddAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()))
+            .Callback<Article, CancellationToken>((a, ct) => { a.Id = 99; addedArticle = a; });
 
-        _mockArticleRepository.Setup(r => r
-            .GetByIdAsync(99, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new Article{
-                Id = 99,
-                Name = addedArticle.Name,
-                CategoryId = addedArticle.CategoryId,
-                Category = existingCategory });
+        _mockArticleRepository.Setup(r => r.GetByIdAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new Article { Id = 99, Name = addedArticle.Name, CategoryId = addedArticle.CategoryId, Category = existingCategory });
 
         _mockUnitOfWork.Setup(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-
-        var result = await _articleService.CreateArticleAsync(inputDto);
+        // Chamar a nova assinatura
+        var result = await _articleService.CreateArticleAsync(inputDto, null, null, null);
 
         Assert.NotNull(result);
         Assert.Equal(99, result.Id);
-        Assert.Equal(inputDto.Name, result.Name);
-        Assert.Equal(existingCategory.Name, result.CategoryName); 
-        _mockArticleRepository.Verify(r => r.AddAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Null(addedArticle.ImageUrl); // Garantir que não foi definida imagem
+        _mockFileStorageService.Verify(fs => fs.UploadAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateArticleAsync_WithValidData_AndImage_ShouldUpload_AddAndSave()
+    {
+        var inputDto = new ArticleDto { Name = "New", Price = 5m, CategoryId = 1 };
+        Article addedArticle = null!;
+        var existingCategory = new Category { Id = 1, Name = "Existing Cat" };
+        var fakeUrl = "http://storage.com/articles/new-guid.jpg";
+        await using var mockStream = CreateMockStream();
+
+        _mockCategoryRepository.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(existingCategory);
+
+        _mockArticleRepository.Setup(r => r.AddAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()))
+            .Callback<Article, CancellationToken>((a, ct) => { a.Id = 99; addedArticle = a; });
+
+        _mockFileStorageService.Setup(fs => fs.UploadAsync(
+                It.IsAny<Stream>(),
+                It.IsAny<string>(),
+                "image/jpeg",
+                "articles",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fakeUrl);
+
+        _mockArticleRepository.Setup(r => r.GetByIdAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new Article { Id = 99, Name = addedArticle.Name, ImageUrl = addedArticle.ImageUrl, CategoryId = addedArticle.CategoryId, Category = existingCategory });
+
+       
+        var result = await _articleService.CreateArticleAsync(inputDto, mockStream, "file.jpg", "image/jpeg");
+
+        Assert.NotNull(result);
+        Assert.Equal(99, result.Id);
+        Assert.Equal(fakeUrl, result.ImageUrl); // Garantir que o URL foi atribuído
+        Assert.Equal(fakeUrl, addedArticle.ImageUrl); // Garantir que a entidade o tinha
+        _mockFileStorageService.Verify(fs => fs.UploadAsync(It.IsAny<Stream>(), It.IsAny<string>(), "image/jpeg", "articles", It.IsAny<CancellationToken>()), Times.Once);
         _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task CreateArticleAsync_WithInvalidCategoryId_ShouldThrowArgumentException()
     {
-        var inputDto = new ArticleDto { Name = "New", Price = 5m, CategoryId = 0 };
-
-        Func<Task> act = async () => await _articleService.CreateArticleAsync(inputDto);
-
+        var inputDto = new ArticleDto { CategoryId = 0 };
+        
+        Func<Task> act = async () => await _articleService.CreateArticleAsync(inputDto, null, null, null);
         await Assert.ThrowsAsync<ArgumentException>(act);
-        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task CreateArticleAsync_WithNonExistentCategoryId_ShouldThrowKeyNotFoundException()
-    {
-        var inputDto = new ArticleDto { Name = "New", Price = 5m, CategoryId = 99 };
-        _mockCategoryRepository.Setup(r => r
-            .GetByIdAsync(99, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Category?)null); 
-
-        Func<Task> act = async () => await _articleService.CreateArticleAsync(inputDto);
-
-        await Assert.ThrowsAsync<KeyNotFoundException>(act);
-        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // --- UpdateArticleAsync Tests ---
 
     [Fact]
-    public async Task UpdateArticleAsync_WhenArticleExistsAndCategoryIsValid_ShouldUpdateAndSave()
+    public async Task UpdateArticleAsync_WithNoImageChange_ShouldUpdateAndSave()
     {
         var articleId = 1;
         var categoryId = 1;
-        var updateDto = new ArticleDto { Id = articleId, Name = "Updated", Price = 15m, CategoryId = categoryId };
-        var existingArticle = CreateTestArticle(articleId, categoryId); // Artigo original
-        var existingCategory = new Category { Id = categoryId, Name = "Existing Cat" };
+        var existingUrl = "http://storage.com/articles/old.jpg";
+        var updateDto = new ArticleDto { Id = articleId, Name = "Updated", CategoryId = categoryId, ImageUrl = existingUrl };
+        var existingArticle = CreateTestArticle(articleId, categoryId, imageUrl: existingUrl);
 
-        _mockArticleRepository.Setup(r => r
-            .GetByIdAsync(articleId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingArticle);
+        _mockArticleRepository.Setup(r => r.GetByIdAsync(articleId, It.IsAny<CancellationToken>())).ReturnsAsync(existingArticle);
+        _mockCategoryRepository.Setup(r => r.GetByIdAsync(categoryId, It.IsAny<CancellationToken>())).ReturnsAsync(new Category { Id = categoryId });
 
-        _mockCategoryRepository.Setup(r => r
-            .GetByIdAsync(categoryId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingCategory); 
-
-        _mockUnitOfWork.Setup(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
-
-        await _articleService.UpdateArticleAsync(updateDto);
+        
+        await _articleService.UpdateArticleAsync(updateDto, null, null, null);
 
         Assert.Equal(updateDto.Name, existingArticle.Name);
-        Assert.Equal(updateDto.Price, existingArticle.Price);
-        Assert.Equal(updateDto.CategoryId, existingArticle.CategoryId);
-        _mockArticleRepository.Verify(r => r.GetByIdAsync(articleId, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(existingUrl, existingArticle.ImageUrl); // Imagem não mudou
+        _mockFileStorageService.Verify(fs => fs.UploadAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockFileStorageService.Verify(fs => fs.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateArticleAsync_WithNewImage_ShouldUploadDeleteOldAndSave()
+    {
+        var articleId = 1;
+        var categoryId = 1;
+        var oldUrl = "http://storage.com/articles/old.jpg";
+        var newUrl = "http://storage.com/articles/new.jpg";
+        var updateDto = new ArticleDto { Id = articleId, Name = "Updated", CategoryId = categoryId, ImageUrl = oldUrl }; // DTO ainda tem o URL antigo
+        var existingArticle = CreateTestArticle(articleId, categoryId, imageUrl: oldUrl);
+        await using var mockStream = CreateMockStream();
+
+        _mockArticleRepository.Setup(r => r.GetByIdAsync(articleId, It.IsAny<CancellationToken>())).ReturnsAsync(existingArticle);
+        _mockCategoryRepository.Setup(r => r.GetByIdAsync(categoryId, It.IsAny<CancellationToken>())).ReturnsAsync(new Category { Id = categoryId });
+
+        _mockFileStorageService.Setup(fs => fs.UploadAsync(
+                It.IsAny<Stream>(), It.IsAny<string>(), "image/png", "articles", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(newUrl);
+
+        // Chamar a nova assinatura (COM stream)
+        await _articleService.UpdateArticleAsync(updateDto, mockStream, "new.png", "image/png");
+
+        // Assert
+        Assert.Equal(newUrl, existingArticle.ImageUrl); // URL foi atualizado na entidade
+        _mockFileStorageService.Verify(fs => fs.UploadAsync(It.IsAny<Stream>(), It.IsAny<string>(), "image/png", "articles", It.IsAny<CancellationToken>()), Times.Once);
+        _mockFileStorageService.Verify(fs => fs.DeleteAsync(oldUrl, "articles", It.IsAny<CancellationToken>()), Times.Once); // Verifca se o antigo foi apagado
         _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task UpdateArticleAsync_WhenArticleDoesNotExist_ShouldThrowKeyNotFoundException()
     {
-        var articleId = 99;
-        var updateDto = new ArticleDto { Id = articleId, Name = "Updated" };
-        _mockArticleRepository.Setup(r => r
-            .GetByIdAsync(articleId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Article?)null);
-
-        Func<Task> act = async () => await _articleService.UpdateArticleAsync(updateDto);
-
+        var updateDto = new ArticleDto { Id = 99 };
+        _mockArticleRepository.Setup(r => r.GetByIdAsync(99, It.IsAny<CancellationToken>())).ReturnsAsync((Article?)null);
+        // Chamar a nova assinatura
+        Func<Task> act = async () => await _articleService.UpdateArticleAsync(updateDto, null, null, null);
         await Assert.ThrowsAsync<KeyNotFoundException>(act);
-        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task UpdateArticleAsync_WithNonExistentCategoryId_ShouldThrowKeyNotFoundException()
-    {
-        var articleId = 1;
-        var newCategoryId = 99;
-        var updateDto = new ArticleDto { Id = articleId, Name = "Updated", CategoryId = newCategoryId };
-        var existingArticle = CreateTestArticle(articleId, 1); // Categoria original é 1
-
-        _mockArticleRepository.Setup(r => r
-            .GetByIdAsync(articleId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingArticle);
-
-        _mockCategoryRepository.Setup(r => r
-            .GetByIdAsync(newCategoryId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Category?)null); // Nova categoria NÃO existe
-
-        Func<Task> act = async () => await _articleService.UpdateArticleAsync(updateDto);
-
-        await Assert.ThrowsAsync<KeyNotFoundException>(act);
-        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
 
     // --- DeleteArticleAsync Tests ---
 
     [Fact]
-    public async Task DeleteArticleAsync_WhenArticleExistsAndNotInOrders_ShouldDeleteAndSave()
+    public async Task DeleteArticleAsync_WhenArticleExists_AndNoImage_ShouldDeleteAndSave()
     {
         var articleId = 1;
-        var existingArticle = CreateTestArticle(articleId);
+        var existingArticle = CreateTestArticle(articleId, imageUrl: null); // Sem Imagem
 
-        _mockArticleRepository.Setup(r => r
-            .GetByIdAsync(articleId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingArticle);
-
-        _mockOrderItemRepository.Setup(r => r
-            .ExistsWithArticleIdAsync(articleId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false); // Não está em orders
-
-        _mockArticleRepository.Setup(r => r
-            .DeleteAsync(existingArticle, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
+        _mockArticleRepository.Setup(r => r.GetByIdAsync(articleId, It.IsAny<CancellationToken>())).ReturnsAsync(existingArticle);
+        _mockOrderItemRepository.Setup(r => r.ExistsWithArticleIdAsync(articleId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _mockArticleRepository.Setup(r => r.DeleteAsync(existingArticle, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         _mockUnitOfWork.Setup(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         await _articleService.DeleteArticleAsync(articleId);
 
-        _mockArticleRepository.Verify(r => r.GetByIdAsync(articleId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockOrderItemRepository.Verify(r => r.ExistsWithArticleIdAsync(articleId, It.IsAny<CancellationToken>()), Times.Once);
         _mockArticleRepository.Verify(r => r.DeleteAsync(existingArticle, It.IsAny<CancellationToken>()), Times.Once);
         _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockFileStorageService.Verify(fs => fs.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never); // NUNCA deve ser chamado
     }
 
     [Fact]
-    public async Task DeleteArticleAsync_WhenArticleDoesNotExist_ShouldThrowKeyNotFoundException()
+    public async Task DeleteArticleAsync_WhenArticleExists_AndHasImage_ShouldDeleteBlobAndSave()
     {
-        var articleId = 99;
-        _mockArticleRepository.Setup(r => r
-            .GetByIdAsync(articleId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Article?)null);
+        var articleId = 1;
+        var imageUrl = "http://storage.com/articles/delete-me.jpg";
+        var existingArticle = CreateTestArticle(articleId, imageUrl: imageUrl); // COM Imagem
 
-        Func<Task> act = async () => await _articleService.DeleteArticleAsync(articleId);
+        _mockArticleRepository.Setup(r => r.GetByIdAsync(articleId, It.IsAny<CancellationToken>())).ReturnsAsync(existingArticle);
+        _mockOrderItemRepository.Setup(r => r.ExistsWithArticleIdAsync(articleId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _mockArticleRepository.Setup(r => r.DeleteAsync(existingArticle, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _mockUnitOfWork.Setup(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(act);
-        _mockOrderItemRepository.Verify(r => r
-            .ExistsWithArticleIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
-        _mockArticleRepository.Verify(r => r
-            .DeleteAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()), Times.Never);
-        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        await _articleService.DeleteArticleAsync(articleId);
+
+        _mockArticleRepository.Verify(r => r.DeleteAsync(existingArticle, It.IsAny<CancellationToken>()), Times.Once);
+        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockFileStorageService.Verify(fs => fs.DeleteAsync(imageUrl, "articles", It.IsAny<CancellationToken>()), Times.Once); // DEVE ser chamado
     }
 
     [Fact]
@@ -311,19 +329,12 @@ public class ArticleServiceTests
         var articleId = 1;
         var existingArticle = CreateTestArticle(articleId);
 
-        _mockArticleRepository.Setup(r => r
-            .GetByIdAsync(articleId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingArticle);
-        _mockOrderItemRepository.Setup(r => r
-            .ExistsWithArticleIdAsync(articleId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true); // ESTÁ em orders
+        _mockArticleRepository.Setup(r => r.GetByIdAsync(articleId, It.IsAny<CancellationToken>())).ReturnsAsync(existingArticle);
+        _mockOrderItemRepository.Setup(r => r.ExistsWithArticleIdAsync(articleId, It.IsAny<CancellationToken>())).ReturnsAsync(true); // ESTÁ em orders
 
         Func<Task> act = async () => await _articleService.DeleteArticleAsync(articleId);
 
         await Assert.ThrowsAsync<InvalidOperationException>(act);
-        _mockArticleRepository.Verify(r => r.GetByIdAsync(articleId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockOrderItemRepository.Verify(r => r.ExistsWithArticleIdAsync(articleId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockArticleRepository.Verify(r => r.DeleteAsync(It.IsAny<Article>(), It.IsAny<CancellationToken>()), Times.Never);
-        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _mockFileStorageService.Verify(fs => fs.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
