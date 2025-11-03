@@ -40,9 +40,9 @@ public class AdminController : Controller
         _logger = logger;
     }
 
-    // --- DASHBOARD PRINCIPAL ---
+    // --- DASHBOARD d Admin ---
 
-    // GET: /Admin/Index ou /Admin
+    // GET:  /Admin
     public IActionResult Index()
     {        
         return View();
@@ -417,7 +417,26 @@ public class AdminController : Controller
         }
     }
 
-    // TODO: Adicionar [HttpPost] para atualizar o OrderStatus
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarkAsShipped(int orderId)
+    {
+        // TempData para feedback de froma a redirecionar
+        try
+        {
+            await _orderService.MarkOrderAsShippedAsync(orderId);
+            _logger.LogInformation("Admin marcou a Encomenda {OrderId} como Enviada.", orderId);
+            TempData["OrderMessage"] = "Encomenda marcada como 'Enviada' e mensagem enviada para a logística.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Falha ao tentar marcar a Encomenda {OrderId} como Enviada.", orderId);
+            TempData["OrderError"] = $"Erro ao processar envio: {ex.Message}";
+        }
+
+        // Redireciona de volta para a pag de detalhes onde o admin estava
+        return RedirectToAction(nameof(OrderDetails), new { id = orderId });
+    }
 
     #endregion
 

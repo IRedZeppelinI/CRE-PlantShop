@@ -6,6 +6,16 @@
 <h1>@ViewData["Title"]</h1>
 <hr />
 
+@* Mensagens sobre sucesso/insucesso da message queue *@
+@if (TempData["OrderMessage"] != null)
+{
+    <div class="alert alert-success" role="alert">@TempData["OrderMessage"]</div>
+}
+@if (TempData["OrderError"] != null)
+{
+    <div class="alert alert-danger" role="alert">@TempData["OrderError"]</div>
+}
+
 <div class="row g-4">
     <div class="col-lg-4">
         <div class="card shadow-sm">
@@ -26,7 +36,7 @@
                     <dt class="col-sm-5">Estado:</dt>
                     <dd class="col-sm-7">
                         <span class="badge
-                              @(Model.OrderStatus == "Pendente" ? "bg-warning text-dark" : "bg-success")">
+                              @(Model.OrderStatus == "Pendente" ? "bg-warning text-dark" : (Model.OrderStatus == "Enviada" ? "bg-success" : "bg-secondary"))">
                             @Model.OrderStatus
                         </span>
                     </dd>
@@ -43,6 +53,23 @@
                     @Model.Address
                 </p>
 
+                @if (Model.OrderStatus == "Pendente")
+                {
+                    <hr />
+                    <h6 class="mb-3">Ações</h6>
+                    <form asp-action="MarkAsShipped" method="post"
+                          asp-route-orderId="@Model.Id"
+                          onsubmit="return confirm('Tem a certeza que quer marcar esta encomenda como ENVIADA? Esta ação irá notificar a logística.');">
+
+                        @Html.AntiForgeryToken()
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-send-check-fill"></i> Marcar como Enviada
+                            </button>
+                        </div>
+                    </form>
+                }
             </div>
         </div>
     </div>

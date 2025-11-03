@@ -1,4 +1,5 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure.Messaging.ServiceBus;
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +19,7 @@ public static class DependencyInjection
     {
         var DbConnectionString = configuration.GetConnectionString("DefaultConnection");
         var StorageAccountConnectionString = configuration.GetConnectionString("StorageAccount");
+        var ServiceBusConnectionString = configuration.GetConnectionString("ServiceBus");
 
         services.AddDbContext<ApplicationDbContext>(options =>
             //options.UseSqlServer(connectionString)); 
@@ -40,8 +42,12 @@ public static class DependencyInjection
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+        //Azure
         services.AddSingleton(serviceProvider => new BlobServiceClient(StorageAccountConnectionString));
         services.AddScoped<IFileStorageService, BlobStorageService>();
+
+        services.AddSingleton(x => new ServiceBusClient(ServiceBusConnectionString));
+        services.AddScoped<IMessagePublisher, ServiceBusPublisher>();
 
         return services;
     }

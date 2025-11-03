@@ -20,4 +20,5 @@ public interface IOrderService
 
     Task<IEnumerable<OrderDto>> GetAllOrdersAsync(CancellationToken cancellationToken = default);
 
+    Task MarkOrderAsShippedAsync(int orderId, CancellationToken cancellationToken = default);
 }

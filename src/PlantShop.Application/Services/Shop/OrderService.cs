@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using PlantShop.Application.DTOs.Messaging;
 using PlantShop.Application.DTOs.Shop;
+using PlantShop.Application.Interfaces.Infrastructure;
 using PlantShop.Application.Interfaces.Persistence;
 using PlantShop.Application.Interfaces.Services.Shop;
 using PlantShop.Domain.Entities.Shop;
@@ -10,11 +12,13 @@ public class OrderService : IOrderService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<OrderService> _logger;
+    private readonly IMessagePublisher _messagePublisher;
 
-    public OrderService(IUnitOfWork unitOfWork, ILogger<OrderService> logger)
+    public OrderService(IUnitOfWork unitOfWork, ILogger<OrderService> logger, IMessagePublisher messagePublisher)
     {
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _messagePublisher = messagePublisher;
     }
         
     public async Task<OrderDto> CreateOrderAsync(
@@ -139,6 +143,61 @@ public class OrderService : IOrderService
         return orders.Select(MapOrderToDto);
     }
 
+
+    public async Task MarkOrderAsShippedAsync(int orderId, CancellationToken cancellationToken = default)
+    {
+        // GetOrderDetailsAsync tem AsNoTracking() por isso uso GetByIdAsync e vou buscar o user separadamente         
+        var order = await _unitOfWork.Orders.GetByIdAsync(orderId, cancellationToken);
+
+        if (order == null)
+        {
+            _logger.LogWarning("Tentativa de marcar encomenda inexistente ({OrderId}) como enviada.", orderId);
+            throw new KeyNotFoundException($"Encomenda com ID {orderId} não encontrada.");
+        }
+
+        var user = await _unitOfWork.AppUsers.GetByIdAsync(order.UserId, cancellationToken);
+
+        if (user == null)
+        {
+            // Sanity check, embora a FK não deva permitir isto
+            _logger.LogError("Encomenda {OrderId} não tem utilizador associado.", orderId);
+            throw new InvalidOperationException("A encomenda não tem um utilizador associado.");
+        }
+
+        //  Validar o estado
+        if (order.OrderStatus != "Pendente")
+        {
+            _logger.LogWarning("Tentativa de marcar encomenda ({OrderId}) como enviada, mas o estado já é {Status}.", orderId, order.OrderStatus);
+            throw new InvalidOperationException($"A encomenda não pode ser enviada (Estado atual: {order.OrderStatus}).");
+        }
+
+        //  Atualizar o estado na Base de Dados
+        order.OrderStatus = "Enviada";
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Encomenda {OrderId} marcada como 'Enviada' na Base de Dados.", orderId);
+
+        //  Mapear para o DTO da mensagem
+        var shippingDto = new OrderShippingDto
+        {
+            OrderId = order.Id,
+            CustomerFullName = user.FullName,
+            // O CreateOrderAsync já valida que a morada existe
+            ShippingAddress = user.Address ?? "Morada não fornecida"
+        };
+
+        // Publicar a mensagem 
+        try
+        {
+            await _messagePublisher.PublishOrderForShippingAsync(shippingDto, cancellationToken);
+            _logger.LogInformation("Mensagem para a Encomenda {OrderId} publicada no Service Bus.", orderId);
+        }
+        catch (Exception ex)
+        {
+            // Se a publicação falhar, a BD já foi alterada.           
+            _logger.LogError(ex, "Falha ao publicar mensagem no Service Bus para a Encomenda {OrderId} (Estado já está 'Enviada').", orderId);
+            
+        }
+    }
 
 
     private OrderDto MapOrderToDto(Order order)
