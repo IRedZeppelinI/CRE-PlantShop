@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using PlantShop.Application.DTOs.Shop;
 using PlantShop.Application.Interfaces.Infrastructure;
 using PlantShop.Application.Interfaces.Services.Shop;
+using PlantShop.Domain.Entities;
 using PlantShop.WebUI.Models.Admin;
 
 namespace PlantShop.WebUI.Controllers;
@@ -15,6 +18,8 @@ public class AdminController : Controller
     private readonly ICategoryService _categoryService;
     private readonly IOrderService _orderService;
     private readonly IFileStorageService _fileStorageService;
+    private readonly UserManager<AppUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
@@ -22,12 +27,16 @@ public class AdminController : Controller
         ICategoryService categoryService,
         IOrderService orderService,
         IFileStorageService fileStorageService,
+        UserManager<AppUser> userManager,
+        RoleManager<IdentityRole> roleManager,
         ILogger<AdminController> logger)
     {
         _articleService = articleService;
         _categoryService = categoryService;
         _orderService = orderService;
         _fileStorageService = fileStorageService;
+        _userManager = userManager;
+        _roleManager = roleManager;
         _logger = logger;
     }
 
@@ -412,6 +421,116 @@ public class AdminController : Controller
 
     #endregion
 
+    #region Users
+
+    // GET: /Admin/Users
+    [HttpGet]
+    public async Task<IActionResult> Users()
+    {
+        var users = await _userManager.Users.ToListAsync();
+        var userViewModels = new List<UserListViewModel>();
+
+        foreach (var user in users)
+        {
+            var userViewModel = new UserListViewModel
+            {
+                UserId = user.Id,
+                UserName = user.UserName ?? "N/A",
+                Email = user.Email ?? "N/A",
+                FullName = user.FullName,
+                Roles = await _userManager.GetRolesAsync(user)
+            };
+            userViewModels.Add(userViewModel);
+        }
+
+        return View(userViewModels);
+    }
+
+    // GET: /Admin/ManageRoles/string-guid-id
+    [HttpGet]
+    public async Task<IActionResult> ManageRoles(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
+        {
+            _logger.LogWarning("Admin tentou gerir roles de utilizador inexistente (Id: {UserId})", id);
+            return NotFound();
+        }
+
+        var userRoles = await _userManager.GetRolesAsync(user);
+        var allRoles = await _roleManager.Roles.ToListAsync();
+
+        var viewModel = new ManageUserRolesViewModel
+        {
+            UserId = user.Id,
+            UserName = user.UserName ?? "N/A"
+        };
+
+        foreach (var role in allRoles)
+        {
+            viewModel.Roles.Add(new RoleCheckboxViewModel
+            {
+                RoleName = role.Name!,
+                IsSelected = userRoles.Contains(role.Name!)
+            });
+        }
+
+        return View(viewModel);
+    }
+
+    // POST: /Admin/ManageRoles
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ManageRoles(ManageUserRolesViewModel model)
+    {
+        var user = await _userManager.FindByIdAsync(model.UserId);
+        if (user == null)
+        {
+            _logger.LogError("Falha ao atualizar roles: Utilizador (Id: {UserId}) não encontrado.", model.UserId);
+            return NotFound();
+        }
+
+        var currentRoles = await _userManager.GetRolesAsync(user);
+        var newRoles = model.Roles
+            .Where(r => r.IsSelected)
+            .Select(r => r.RoleName)
+            .ToList();
+
+        // Calcular o que adicionar e o que remover
+        var rolesToAdd = newRoles.Except(currentRoles).ToList();
+        var rolesToRemove = currentRoles.Except(newRoles).ToList();
+
+        // Executar as alterações
+        // TempData para feedback na próxima página
+        try
+        {
+            if (rolesToAdd.Any())
+            {
+                var addResult = await _userManager.AddToRolesAsync(user, rolesToAdd);
+                if (!addResult.Succeeded) throw new Exception(
+                        string.Join(", ", addResult.Errors.Select(e => e.Description)));
+            }
+
+            if (rolesToRemove.Any())
+            {
+                var removeResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                if (!removeResult.Succeeded) throw new Exception(
+                        string.Join(", ", removeResult.Errors.Select(e => e.Description)));
+            }
+
+            _logger.LogInformation("Roles atualizadas para UserId: {UserId} pelo Admin.", model.UserId);
+            TempData["UserMessage"] = "Roles atualizadas com sucesso.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao atualizar roles para UserId: {UserId}", model.UserId);
+            TempData["UserError"] = $"Erro ao atualizar roles: {ex.Message}";
+        }
+
+        return RedirectToAction(nameof(Users));
+    }
+
+    #endregion
 
     private async Task PopulateCategoriesDropdown()
     {

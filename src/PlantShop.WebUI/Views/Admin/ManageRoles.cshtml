@@ -1,0 +1,41 @@
+﻿@model PlantShop.WebUI.Models.Admin.ManageUserRolesViewModel
+@{
+    ViewData["Title"] = "Gerir Roles";
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="ManageRoles" method="post">
+            <input type="hidden" asp-for="UserId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Utilizador: @Model.UserName</h5>
+                </div>
+                <div class="card-body">
+                    <p>Selecione as roles que este utilizador deve ter:</p>
+
+                    @for (int i = 0; i < Model.Roles.Count; i++)
+                    {
+                        <div class="form-check mb-2">
+                            <input type="hidden" asp-for="Roles[i].RoleName" />
+                            <input asp-for="Roles[i].IsSelected" class="form-check-input" />
+                            <label class="form-check-label" asp-for="Roles[i].IsSelected">
+                                @Model.Roles[i].RoleName
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Guardar Alterações</button>
+                <a asp-action="Users" class="btn btn-secondary ms-2">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
