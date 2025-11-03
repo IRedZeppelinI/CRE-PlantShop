@@ -1,5 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Azure.Messaging.ServiceBus;
+using Microsoft.Extensions.Logging;
 using Moq;
+using PlantShop.Application.DTOs.Messaging;
+using PlantShop.Application.Interfaces.Infrastructure;
 using PlantShop.Application.Interfaces.Persistence;
 using PlantShop.Application.Interfaces.Services.Shop;
 using PlantShop.Application.Services.Shop;
@@ -17,6 +20,7 @@ public class OrderServiceTests
 {
     private readonly Mock<IUnitOfWork> _mockUnitOfWork;
     private readonly Mock<ILogger<OrderService>> _mockLogger;
+    private readonly Mock<IMessagePublisher> _mockMessagePublisher; 
 
     private readonly Mock<IAppUserRepository> _mockAppUserRepo;
     private readonly Mock<IArticleRepository> _mockArticleRepo;
@@ -28,6 +32,7 @@ public class OrderServiceTests
     {
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockLogger = new Mock<ILogger<OrderService>>();
+        _mockMessagePublisher = new Mock<IMessagePublisher>();
 
         _mockAppUserRepo = new Mock<IAppUserRepository>();
         _mockArticleRepo = new Mock<IArticleRepository>();
@@ -37,10 +42,11 @@ public class OrderServiceTests
         _mockUnitOfWork.Setup(uow => uow.Articles).Returns(_mockArticleRepo.Object);
         _mockUnitOfWork.Setup(uow => uow.Orders).Returns(_mockOrderRepo.Object);
 
-        _orderService = new OrderService(_mockUnitOfWork.Object, _mockLogger.Object);
+        _orderService = new OrderService(_mockUnitOfWork.Object, _mockLogger.Object, _mockMessagePublisher.Object);
     }
 
     // --- Tests for CreateOrderAsync ---
+    #region CreateOrderAsync
     [Fact]
     public async Task CreateOrderAsync_Should_ThrowKeyNotFoundException_WhenUserNotFound()
     {
@@ -204,7 +210,11 @@ public class OrderServiceTests
         _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    #endregion
+
     // --- Tests for GetOrderDetailsAsync ---
+    #region GetOrderDetailsAsync
+
     [Fact]
     public async Task GetOrderDetailsAsync_Should_ReturnNull_WhenOrderNotFound()
     {
@@ -253,11 +263,15 @@ public class OrderServiceTests
         Assert.Equal(orderId, result.Id);
         Assert.Equal("Enviado", result.OrderStatus);
         Assert.Equal("Test User", result.FullName);
-        Assert.Equal(1, result.OrderItems.Count);
+        Assert.Single(result.OrderItems);
         Assert.Equal("Rosa", result.OrderItems.First().ArticleName);
     }
 
+    #endregion
+
     // --- Tests for GetOrdersForUserAsync ---
+    #region GetOrdersForUserAsync
+
     [Fact]
     public async Task GetOrdersForUserAsync_Should_ReturnUserOrders()
     {
@@ -298,4 +312,183 @@ public class OrderServiceTests
         Assert.NotNull(result);
         Assert.Empty(result);
     }
+
+    #endregion
+
+    // --- Tests for GetAllOrdersAsync ---
+    #region GetAllOrdersAsync
+    [Fact]
+    public async Task GetAllOrdersAsync_Should_ReturnAllOrders()
+    {
+        // Arrange
+        var orders = new List<Order>
+        {
+            new Order { Id = 1, User = new AppUser { FullName = "User A" } },
+            new Order { Id = 2, User = new AppUser { FullName = "User B" } }
+        };
+        _mockOrderRepo.Setup(r => r.GetAllOrdersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(orders);
+
+        // Act
+        var result = await _orderService.GetAllOrdersAsync(CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count());
+        Assert.Equal("User A", result.First().FullName);
+    }
+
+    #endregion
+
+    // --- Tests for MarkOrderAsShippedAsync ---
+    #region MarkOrderAsShippedAsync
+    [Fact]
+    public async Task MarkOrderAsShippedAsync_Should_UpdateStatus_And_PublishMessage_WhenValid()
+    {
+        // Arrange
+        var orderId = 1;
+        var userId = "user123";
+        var user = new AppUser { Id = userId, FullName = "Test User", Address = "123 Shipping St" };
+        var order = new Order { Id = orderId, UserId = userId, OrderStatus = "Pendente" };
+
+        // Mock para a correção do bug (usar GetByIdAsync para tracking)
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _mockUnitOfWork.Setup(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        _mockMessagePublisher.Setup(p => p.PublishOrderForShippingAsync(It.IsAny<OrderShippingDto>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _orderService.MarkOrderAsShippedAsync(orderId, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("Enviada", order.OrderStatus); // Verifica se o estado da entidade mudou
+
+        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once); // Verifica se a BD guardou
+
+        // Verifica se a mensagem foi publicada
+        _mockMessagePublisher.Verify(p => p.PublishOrderForShippingAsync(
+            It.Is<OrderShippingDto>(dto =>
+                dto.OrderId == orderId &&
+                dto.CustomerFullName == user.FullName &&
+                dto.ShippingAddress == user.Address),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task MarkOrderAsShippedAsync_Should_ThrowKeyNotFoundException_WhenOrderNotFound()
+    {
+        // Arrange
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Order?)null);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _orderService.MarkOrderAsShippedAsync(99, CancellationToken.None));
+
+        Assert.Equal("Encomenda com ID 99 não encontrada.", ex.Message);
+        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _mockMessagePublisher.Verify(p => p.PublishOrderForShippingAsync(It.IsAny<OrderShippingDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MarkOrderAsShippedAsync_Should_ThrowInvalidOperationException_WhenUserNotFound()
+    {
+        // Arrange
+        var orderId = 1;
+        var userId = "user123";
+        var order = new Order { Id = orderId, UserId = userId, OrderStatus = "Pendente" };
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((AppUser?)null); // Utilizador não encontrado
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _orderService.MarkOrderAsShippedAsync(orderId, CancellationToken.None));
+
+        Assert.Equal("A encomenda não tem um utilizador associado.", ex.Message);
+        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _mockMessagePublisher.Verify(p => p.PublishOrderForShippingAsync(It.IsAny<OrderShippingDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MarkOrderAsShippedAsync_Should_ThrowInvalidOperationException_WhenOrderStatusIsNotPendente()
+    {
+        // Arrange
+        var orderId = 1;
+        var userId = "user123";
+        var user = new AppUser { Id = userId, FullName = "Test User", Address = "123 Shipping St" };
+        var order = new Order { Id = orderId, UserId = userId, OrderStatus = "Enviada" }; // Estado errado
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _orderService.MarkOrderAsShippedAsync(orderId, CancellationToken.None));
+
+        Assert.Equal("A encomenda não pode ser enviada (Estado atual: Enviada).", ex.Message);
+        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _mockMessagePublisher.Verify(p => p.PublishOrderForShippingAsync(It.IsAny<OrderShippingDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MarkAsShippedAsync_Should_LogErrorg_WhenPublishFails_ButStillSavesDbChanges()
+    {
+        // Arrange
+        var orderId = 1;
+        var userId = "user123";
+        var user = new AppUser { Id = userId, FullName = "Test User", Address = "123 Shipping St" };
+        var order = new Order { Id = orderId, UserId = userId, OrderStatus = "Pendente" };
+
+        _mockOrderRepo.Setup(r => r.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _mockUnitOfWork.Setup(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Simular falha na publicação
+        _mockMessagePublisher.Setup(p => p.PublishOrderForShippingAsync(It.IsAny<OrderShippingDto>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ServiceBusException(
+                "Service Bus is busy", ServiceBusFailureReason.ServiceBusy)); 
+
+        // Act
+        // Não lançar exceção, pois o serviço tem um try/catch para o publisher
+        await _orderService.MarkOrderAsShippedAsync(orderId, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("Enviada", order.OrderStatus); // O estado MUDOU
+
+        _mockUnitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once); // A BD FOI guardada
+
+        // O publisher foi chamado, mas falhou
+        _mockMessagePublisher.Verify(p => p.PublishOrderForShippingAsync(It.IsAny<OrderShippingDto>(), It.IsAny<CancellationToken>()), Times.Once);
+
+        // O LogError foi chamado (implícito pelo try/catch no serviço)
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Falha ao publicar mensagem no Service Bus")),
+                It.IsAny<ServiceBusException>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+    #endregion
 }
