@@ -11,7 +11,7 @@ public interface ICommunityService
     // Escrita
     Task<bool> SubmitGuessAsync(Guid challengeId, string guessText, string userId, string userName);
 
-    // --- Posts ---
+    //--- Posts ---
     //Leitura
     Task<IEnumerable<CommunityPostDto>> GetAllCommunityPostsAsync();
     Task<CommunityPostDto?> GetCommunityPostAsync(Guid postId);
@@ -23,4 +23,6 @@ public interface ICommunityService
 
     // --- Admin ---
     Task CreateOrUpdateDailyChallengeAsync(DailyChallengeDto challengeDto, Stream? imageStream, string? imageFileName, string? imageContentType);
+
+    Task<DailyChallengeDto?> GetChallengeForAdminByDateAsync(DateTime date);
 }

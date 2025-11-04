@@ -35,10 +35,12 @@ public class DailyChallengeRepository : IDailyChallengeRepository
     public async Task<DailyChallenge?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
     {
         // Normaliza a data para garantir apenas Dia/Mês/Ano
-        var dateOnly = date.Date;
-                
-        var query = new QueryDefinition("SELECT TOP 1 * FROM c WHERE c.challengeDate = @date")
-            .WithParameter("@date", dateOnly);
+        var dateString = date.Date.ToString("yyyy-MM-dd");
+
+        // 2. Mudar a query para usar STARTSWITH
+        // Isto irá corresponder a "2025-11-04T00:00:00"
+        var query = new QueryDefinition("SELECT TOP 1 * FROM c WHERE STARTSWITH(c.challengeDate, @dateString)")
+            .WithParameter("@dateString", dateString);
 
         using var feed = _challengeContainer.GetItemQueryIterator<DailyChallenge>(query);
 

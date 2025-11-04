@@ -53,7 +53,7 @@ public class CommunityService : ICommunityService
             throw new KeyNotFoundException("Desafio não encontrado.");
         }
 
-        // Utilizador já tentou adivinhar?
+        // ver se utilizador já tentou adivinhar
         if (challenge.Guesses.Any(g => g.UserId == userId))
         {
             _logger.LogWarning("Utilizador {UserId} tentou adivinhar múltiplas vezes no desafio {ChallengeId}", userId, challengeId);
@@ -119,10 +119,10 @@ public class CommunityService : ICommunityService
             CreatedAt = DateTime.UtcNow,
             AuthorId = authorId,
             AuthorName = authorName,
-            Comments = new List<PostComment>() // Começa sem comentários
+            Comments = new List<PostComment>() 
         };
 
-        //  Guardar no Cosmos DB
+        
         await _postRepo.CreateAsync(newPost);
 
         return newPost.ToDto();
@@ -161,7 +161,7 @@ public class CommunityService : ICommunityService
 
         if (existingChallenge == null)
         {
-            // --- Criar Novo Desafio ---
+            
             if (imageStream == null || imageFileName == null || imageContentType == null)
             {
                 throw new ArgumentException("A imagem é obrigatória para criar um novo desafio.");
@@ -187,15 +187,15 @@ public class CommunityService : ICommunityService
         }
         else
         {
-            // --- Atualizar Desafio -
+            
             existingChallenge.CorrectPlantName = challengeDto.CorrectPlantName;
 
-            // Se  nova imagem  substitui  antiga
+            
             if (imageStream != null && imageFileName != null && imageContentType != null)
             {
                 var oldImageUrl = existingChallenge.ImageUrl;
 
-                // Upload da nova
+                // Upload da nova imagem
                 var fileExtension = Path.GetExtension(imageFileName);
                 var newFileName = $"{Guid.NewGuid()}{fileExtension}";
                 existingChallenge.ImageUrl = await _fileStorageService.UploadAsync(
@@ -212,4 +212,33 @@ public class CommunityService : ICommunityService
             _logger.LogInformation("Desafio Diário atualizado para {Date}", challengeDate);
         }
     }
+
+    public async Task<DailyChallengeDto?> GetChallengeForAdminByDateAsync(DateTime date)
+    {
+        var challengeDate = date.Date;
+        var challengeEntity = await _challengeRepo.GetByDateAsync(challengeDate);
+
+        if (challengeEntity == null)
+        {
+            return null;
+        }
+
+        
+        // não esta a usar ToDto porque o mapper esconde comas respostas
+        return new DailyChallengeDto
+        {
+            Id = challengeEntity.Id,
+            ChallengeDate = challengeEntity.ChallengeDate,
+            ImageUrl = challengeEntity.ImageUrl,
+
+            
+            CorrectPlantName = challengeEntity.CorrectPlantName,
+
+            Guesses = (challengeEntity.Guesses ?? new List<ChallengeGuess>())
+                        .Select(g => g.ToDto())
+                        .ToList()
+                                    
+        };
+    }
+
 }

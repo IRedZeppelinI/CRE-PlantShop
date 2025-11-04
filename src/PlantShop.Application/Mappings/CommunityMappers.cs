@@ -58,11 +58,14 @@ internal static class CommunityMappers
             ImageUrl = entity.ImageUrl,
             // A resposta correta só é revelada se o utilizador já adivinhou ou seo Admin adicionar
             CorrectPlantName = "", // Por defeito não é revelado
-            Guesses = entity.Guesses.Select(g => g.ToDto()).ToList()
+            Guesses = (entity.Guesses ?? new List<ChallengeGuess>())
+                        .Select(g => g.ToDto())
+                        .ToList()
         };
 
         // Verificar se o utilizador atual já adivinhou
-        var currentUserGuess = entity.Guesses.FirstOrDefault(g => g.UserId == currentUserId);
+        var currentUserGuess = (entity.Guesses ?? new List<ChallengeGuess>())
+                                 .FirstOrDefault(g => g.UserId == currentUserId);
         if (currentUserGuess != null)
         {
             dto.HasCurrentUserGuessed = true;

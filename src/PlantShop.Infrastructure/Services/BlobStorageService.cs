@@ -1,6 +1,6 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using PlantShop.Application.Interfaces.Infrastructure; // A nossa interface
+using PlantShop.Application.Interfaces.Infrastructure; 
 using Microsoft.Extensions.Logging;
 
 namespace PlantShop.Infrastructure.Services;
@@ -41,7 +41,7 @@ public class BlobStorageService : IFileStorageService
         {
             var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
 
-            // Extrai o nome do blob a partir do URL completo
+            // TODO: talvez alterar
             var blobName = new Uri(fileUrl).Segments.LastOrDefault();
             if (string.IsNullOrEmpty(blobName))
             {

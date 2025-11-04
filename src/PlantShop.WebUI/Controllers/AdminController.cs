@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using PlantShop.Application.DTOs.Community;
 using PlantShop.Application.DTOs.Shop;
 using PlantShop.Application.Interfaces.Infrastructure;
+using PlantShop.Application.Interfaces.Services.Community;
 using PlantShop.Application.Interfaces.Services.Shop;
 using PlantShop.Domain.Entities;
 using PlantShop.WebUI.Models.Admin;
@@ -20,6 +22,7 @@ public class AdminController : Controller
     private readonly IFileStorageService _fileStorageService;
     private readonly UserManager<AppUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly ICommunityService _communityService;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
@@ -29,6 +32,7 @@ public class AdminController : Controller
         IFileStorageService fileStorageService,
         UserManager<AppUser> userManager,
         RoleManager<IdentityRole> roleManager,
+        ICommunityService communityService,
         ILogger<AdminController> logger)
     {
         _articleService = articleService;
@@ -37,11 +41,11 @@ public class AdminController : Controller
         _fileStorageService = fileStorageService;
         _userManager = userManager;
         _roleManager = roleManager;
+        _communityService = communityService;
         _logger = logger;
     }
 
-    // --- DASHBOARD d Admin ---
-
+    
     // GET:  /Admin
     public IActionResult Index()
     {        
@@ -547,6 +551,93 @@ public class AdminController : Controller
         }
 
         return RedirectToAction(nameof(Users));
+    }
+
+    #endregion
+
+    #region Challenges
+
+    // GET: /Admin/ManageChallenge
+    [HttpGet]
+    public async Task<IActionResult> ManageChallenge(DateTime? date)
+    { 
+        var challengeDate = date ?? DateTime.UtcNow.Date;
+
+
+        var challengeDto = await _communityService.GetChallengeForAdminByDateAsync(challengeDate);
+        // TODO: acrescentar um  get all
+
+        var viewModel = new DailyChallengeFormViewModel
+        {
+            ChallengeDate = challengeDate
+        };
+
+        if (challengeDto != null)
+        {
+            viewModel.Challenge = challengeDto;
+        }
+        else
+        {
+            viewModel.Challenge = new DailyChallengeDto();
+        }
+
+        return View(viewModel);
+    }
+
+    // POST: /Admin/ManageChallenge
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ManageChallenge(DailyChallengeFormViewModel viewModel)
+    {
+        //validação
+        if (viewModel.Challenge.CorrectPlantName == null)
+        {
+            ModelState.AddModelError("Challenge.CorrectPlantName", "O nome da planta é obrigatório.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(viewModel);
+        }
+
+        try
+        {
+            //imnagem
+            Stream? imageStream = null;
+            string? imageFileName = null;
+            string? imageContentType = null;
+
+            if (viewModel.ImageFile != null && viewModel.ImageFile.Length > 0)
+            {
+                imageStream = viewModel.ImageFile.OpenReadStream();
+                imageFileName = viewModel.ImageFile.FileName;
+                imageContentType = viewModel.ImageFile.ContentType;
+            }
+
+            // dto para o serviço
+            var dto = new DailyChallengeDto
+            {
+                ChallengeDate = viewModel.ChallengeDate,
+                CorrectPlantName = viewModel.Challenge.CorrectPlantName!
+            };
+
+            // criar ou actualizar
+            await _communityService.CreateOrUpdateDailyChallengeAsync(
+                dto,
+                imageStream,
+                imageFileName,
+                imageContentType
+            );
+
+            TempData["AdminMessage"] = $"Desafio para {viewModel.ChallengeDate.ToShortDateString()} guardado com sucesso.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao guardar o Desafio Diário para {Date}", viewModel.ChallengeDate);
+            ModelState.AddModelError(string.Empty, $"Erro ao guardar: {ex.Message}");
+            return View(viewModel);
+        }
     }
 
     #endregion
