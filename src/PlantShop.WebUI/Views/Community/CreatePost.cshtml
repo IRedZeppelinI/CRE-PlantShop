@@ -1,0 +1,50 @@
+﻿@model PlantShop.WebUI.Models.Community.CommunityPostCreateViewModel
+@{
+    ViewData["Title"] = "Pedir Ajuda à Comunidade";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h1 class="text-center" style="color: var(--primary-green);">@ViewData["Title"]</h1>
+        <p class="text-center text-muted">Carregue uma foto da planta que não consegue identificar e deixe a comunidade ajudar.</p>
+        <hr />
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <form asp-action="CreatePost" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="ImageFile" class="form-label"></label>
+                        <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" required />
+                        <span asp-validation-for="ImageFile" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label"></label>
+                        <input asp-for="Title" class="form-control" placeholder="Ex: Que planta é esta na minha varanda?" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Algum detalhe extra? (Ex: Cheiro, textura, onde a encontrou...)"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send-fill"></i> Publicar Pedido
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

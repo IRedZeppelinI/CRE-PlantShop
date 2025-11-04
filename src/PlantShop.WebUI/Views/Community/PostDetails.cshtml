@@ -1,0 +1,100 @@
+﻿@model PlantShop.WebUI.Models.Community.PostDetailsViewModel
+@{
+    ViewData["Title"] = Model.Post.Title;
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header">
+                    <h1 class="h3 mb-0">@Model.Post.Title</h1>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <img src="@Model.Post.ImageUrl" alt="@Model.Post.Title" class="img-fluid rounded shadow" />
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted">
+                                Pedido por: <strong>@Model.Post.AuthorName</strong>
+                                em @Model.Post.CreatedAt.ToLocalTime().ToString("g")
+                            </p>
+                            @if (!string.IsNullOrEmpty(Model.Post.Description))
+                            {
+                                <p>@Model.Post.Description</p>
+                            }
+                            else
+                            {
+                                <p class="text-muted"><i>O autor não deixou uma descrição.</i></p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="mb-3">Respostas da Comunidade (@Model.Post.Comments.Count)</h3>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="mb-3">Deixe a sua resposta</h5>
+                        <form asp-action="AddComment" asp-route-id="@Model.Post.Id" method="post">
+                            @Html.AntiForgeryToken()
+
+                            @if (TempData["CommentError"] != null)
+                            {
+                                <div class="alert alert-danger small p-2">@TempData["CommentError"]</div>
+                            }
+
+                            <div class="mb-3">
+                                <textarea asp-for="NewCommentText" class="form-control" rows="3" placeholder="Ajude a identificar esta planta..."></textarea>
+                                <span asp-validation-for="NewCommentText" class="text-danger"></span>
+                            </div>
+                            <div class="text-end">
+                                <button type.submit" class="btn btn-primary">
+                                    <i class="bi bi-chat-dots-fill"></i> Comentar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center">
+                    <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path">Faça login</a> para deixar um comentário.
+                </div>
+            }
+
+            @if (Model.Post.Comments.Any())
+            {
+                @foreach (var comment in Model.Post.Comments.OrderBy(c => c.CreatedAt))
+                {
+                    <div class="card mb-3 shadow-sm border-0">
+                        <div class="card-body p-3">
+                            <p class="card-text">@comment.Text</p>
+                            <small class="text-muted">
+                                Por: <strong>@comment.AuthorName</strong>
+                                em @comment.CreatedAt.ToLocalTime().ToString("g")
+                            </small>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted text-center">Ainda não há comentários. Seja o primeiro a ajudar!</p>
+            }
+
+            <div class="mt-4">
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar ao Mural
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>

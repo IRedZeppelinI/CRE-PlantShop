@@ -1,0 +1,110 @@
+﻿@model PlantShop.WebUI.Models.Community.CommunityIndexViewModel
+@{
+    ViewData["Title"] = "Comunidade";
+}
+
+<div class="row g-5">
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0" style="position: sticky; top: 20px;">
+            <div class="card-header text-center" style="background-color: var(--primary-green); color: white;">
+                <h4 class="mb-0"><i class="bi bi-calendar-event-fill"></i> Desafio Diário</h4>
+            </div>
+
+            @if (Model.TodayChallenge == null)
+            {
+                <div class="card-body text-center">
+                    <p class="text-muted">Ainda não há nenhum desafio para hoje. Volte mais tarde!</p>
+                </div>
+            }
+            else
+            {
+                <img src="@Model.TodayChallenge.ImageUrl" class="card-img-top" alt="Desafio Diário" style="height: 250px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Que planta é esta?</h5>
+
+                    @if (TempData["ChallengeError"] != null)
+                    {
+                        <div class="alert alert-danger small p-2">@TempData["ChallengeError"]</div>
+                    }
+                    @if (TempData["ChallengeSuccess"] != null)
+                    {
+                        <div class="alert alert-success small p-2">@TempData["ChallengeSuccess"]</div>
+                    }
+
+                    @if (Model.TodayChallenge.HasCurrentUserGuessed)
+                    {
+                        <div class="text-center p-3" style="background-color: var(--secondary-light-green); border-radius: 5px;">
+                            <h6 class="mb-1">Já submeteu o seu palpite!</h6>
+                            <p class="mb-0">A resposta correta é: <strong>@Model.TodayChallenge.CorrectPlantName</strong></p>
+                        </div>
+                    }
+                    else if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <form asp-action="SubmitGuess" asp-controller="Community" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="challengeId" value="@Model.TodayChallenge.Id" />
+                            <div class="input-group">
+                                <input type="text" name="guess" class="form-control" placeholder="Escreva o seu palpite..." required />
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send-fill"></i>
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="text-center">
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary btn-sm">
+                                Faça login para participar!
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">Mural da Comunidade</h2>
+            <a asp-action="CreatePost" class="btn btn-primary">
+                <i class="bi bi-camera-fill"></i> Pedir Ajuda
+            </a>
+        </div>
+
+        @if (!Model.Posts.Any())
+        {
+            <div class="text-center p-5 rounded" style="background-color: var(--secondary-light-green);">
+                <p class="lead text-muted">Ainda ninguém pediu ajuda. Seja o primeiro!</p>
+            </div>
+        }
+        else
+        {
+            <div class="list-group shadow-sm">
+                @foreach (var post in Model.Posts)
+                {
+                    <a asp-action="PostDetails" asp-route-id="@post.Id" class="list-group-item list-group-item-action p-3">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-3 col-md-2">
+                                <img src="@post.ImageUrl" alt="@post.Title"
+                                     class="img-fluid rounded border"
+                                     style="height: 75px; width: 100%; object-fit: cover;" />
+                            </div>
+                            <div class="col-9 col-md-10">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">@post.Title</h5>
+                                    <small class="text-muted">@post.CreatedAt.ToShortDateString()</small>
+                                </div>
+                                <p class="mb-1 text-truncate">@post.Description</p>
+                                <small class="text-muted">
+                                    Por: @post.AuthorName | Comentários: @post.Comments.Count
+                                </small>
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
