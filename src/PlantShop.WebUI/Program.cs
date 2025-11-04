@@ -45,6 +45,22 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var cosmosContext = services.GetRequiredService<CosmosDbContext>();
+        await cosmosContext.InitializeDatabaseAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogCritical(ex, "An error occurred while initializing the CosmosDB database.");
+        throw; 
+    }
+}
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

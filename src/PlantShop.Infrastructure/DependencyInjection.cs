@@ -1,6 +1,7 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,9 +21,9 @@ public static class DependencyInjection
         var DbConnectionString = configuration.GetConnectionString("DefaultConnection");
         var StorageAccountConnectionString = configuration.GetConnectionString("StorageAccount");
         var ServiceBusConnectionString = configuration.GetConnectionString("ServiceBus");
+        var CosmosDbConnectionString = configuration.GetConnectionString("CosmosDb");
 
         services.AddDbContext<ApplicationDbContext>(options =>
-            //options.UseSqlServer(connectionString)); 
             options.UseNpgsql(DbConnectionString));
 
         services.AddSingleton(x =>
@@ -43,11 +44,29 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         //Azure
+        //Blobs
         services.AddSingleton(serviceProvider => new BlobServiceClient(StorageAccountConnectionString));
         services.AddScoped<IFileStorageService, BlobStorageService>();
 
+        //bus queue
         services.AddSingleton(x => new ServiceBusClient(ServiceBusConnectionString));
         services.AddScoped<IMessagePublisher, ServiceBusPublisher>();
+
+        //cosmosDB
+        services.AddSingleton(x =>
+        {            
+            // Serializer para gravar como camelCase
+            var cosmosClientOptions = new CosmosClientOptions
+            {
+                SerializerOptions = new CosmosSerializationOptions
+                {
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+            };
+            return new CosmosClient(CosmosDbConnectionString, cosmosClientOptions);
+        });
+
+        services.AddSingleton<CosmosDbContext>();
 
         return services;
     }
