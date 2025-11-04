@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using PlantShop.Application.Interfaces.Services.Community;
 using PlantShop.Application.Interfaces.Services.Shop;
+using PlantShop.Application.Services.Community;
 using PlantShop.Application.Services.Shop;
 
 namespace PlantShop.Application;
@@ -13,7 +14,7 @@ public static class DependencyInjection
         services.AddScoped<IArticleService, ArticleService>();
         services.AddScoped<IOrderService, OrderService>();
 
-        //services.AddScoped<ICommunityService, CommunityService>();
+        services.AddScoped<ICommunityService, CommunityService>();
 
         return services;
     }
