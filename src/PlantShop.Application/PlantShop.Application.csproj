@@ -7,12 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="DTOs\Community\**" />
-    <EmbeddedResource Remove="DTOs\Community\**" />
-    <None Remove="DTOs\Community\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\PlantShop.Domain\PlantShop.Domain.csproj" />
   </ItemGroup>
 

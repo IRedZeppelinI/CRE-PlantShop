@@ -26,8 +26,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(DbConnectionString));
 
-        services.AddSingleton(x =>
-            new BlobServiceClient(StorageAccountConnectionString));
+        
 
         services.AddIdentity<AppUser, IdentityRole>(options =>
         {
@@ -43,8 +42,10 @@ public static class DependencyInjection
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+
         //Azure
         //Blobs
+        //services.AddSingleton(x => new BlobServiceClient(StorageAccountConnectionString));
         services.AddSingleton(serviceProvider => new BlobServiceClient(StorageAccountConnectionString));
         services.AddScoped<IFileStorageService, BlobStorageService>();
 
@@ -67,6 +68,9 @@ public static class DependencyInjection
         });
 
         services.AddSingleton<CosmosDbContext>();
+
+        //services.AddScoped<IDailyChallengeRepository, DailyChallengeRepository>();
+        //services.AddScoped<ICommunityPostRepository, CommunityPostRepository>();
 
         return services;
     }
