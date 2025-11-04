@@ -1,6 +1,6 @@
 ﻿using PlantShop.Domain.Entities.Community;
 
-namespace PlantShop.Application.Interfaces.Persistence;
+namespace PlantShop.Application.Interfaces.Persistence.Cosmos;
 
 public interface IDailyChallengeRepository
 {

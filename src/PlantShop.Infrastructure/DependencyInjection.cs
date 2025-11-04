@@ -7,8 +7,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PlantShop.Application.Interfaces.Infrastructure;
 using PlantShop.Application.Interfaces.Persistence;
+using PlantShop.Application.Interfaces.Persistence.Cosmos;
 using PlantShop.Domain.Entities;
 using PlantShop.Infrastructure.Persistence;
+using PlantShop.Infrastructure.Persistence.Repositories.Cosmos;
 using PlantShop.Infrastructure.Services;
 
 namespace PlantShop.Infrastructure;
@@ -69,8 +71,8 @@ public static class DependencyInjection
 
         services.AddSingleton<CosmosDbContext>();
 
-        //services.AddScoped<IDailyChallengeRepository, DailyChallengeRepository>();
-        //services.AddScoped<ICommunityPostRepository, CommunityPostRepository>();
+        services.AddScoped<IDailyChallengeRepository, DailyChallengeRepository>();
+        services.AddScoped<ICommunityPostRepository, CommunityPostRepository>();
 
         return services;
     }
