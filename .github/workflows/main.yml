@@ -1,0 +1,38 @@
+name: CI CD para CRE CLOUD- 89104/2025 PlantShop
+
+on:
+  workflow_dispatch:
+
+  # push:
+  #   branches: [ "main" ]
+
+jobs:
+  
+  build-and-test:
+        
+    runs-on: self-hosted
+
+    steps:    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+   
+    - name: Start Postgres Container
+      run: docker-compose up -d
+    
+    - name: Restore dependencies
+      run: dotnet restore PlantShop.sln
+    
+    - name: Build
+      run: dotnet build PlantShop.sln --no-restore --configuration Release
+    
+    - name: Test
+      run: dotnet test PlantShop.sln --no-build --configuration Release --verbosity normal
+    
+    - name: Stop Postgres Container
+      if: always()
+      run: docker-compose down
