@@ -267,4 +267,26 @@ public class CommunityService : ICommunityService
         });
     }
 
+    public async Task<IEnumerable<DailyChallengeDto>> GetChallengeArchiveAsync(string? currentUserId)
+    {
+        var challenges = await _challengeRepo.GetAllAsync();
+
+        
+        // mapper é que vê se o challenge já acabou por cada challende 
+        return challenges
+            .OrderByDescending(c => c.ChallengeDate)
+            .Select(c => c.ToDto(currentUserId));
+    }
+
+    public async Task<DailyChallengeDto?> GetChallengeDetailsAsync(Guid challengeId, string? currentUserId)
+    {
+        var challengeEntity = await _challengeRepo.GetByIdAsync(challengeId);
+        if (challengeEntity == null)
+        {
+            return null;
+        }
+        
+        return challengeEntity.ToDto(currentUserId);
+    }
+
 }

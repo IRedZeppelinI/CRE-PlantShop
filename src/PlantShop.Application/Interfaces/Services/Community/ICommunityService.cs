@@ -31,4 +31,9 @@ public interface ICommunityService
 
     Task<DailyChallengeDto?> GetChallengeByIdAsync(Guid id);
     Task<IEnumerable<DailyChallengeDto>> GetAllChallengesAsync();
+
+    //buscar o challenge com todas as guesses
+    Task<IEnumerable<DailyChallengeDto>> GetChallengeArchiveAsync(string? currentUserId);
+
+    Task<DailyChallengeDto?> GetChallengeDetailsAsync(Guid challengeId, string? currentUserId);
 }

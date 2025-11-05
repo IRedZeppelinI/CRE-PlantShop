@@ -49,28 +49,64 @@ internal static class CommunityMappers
         };
     }
 
+    //public static DailyChallengeDto ToDto(this DailyChallenge entity, string? currentUserId = null)
+    //{
+    //    var dto = new DailyChallengeDto
+    //    {
+    //        Id = entity.Id,
+    //        ChallengeDate = entity.ChallengeDate,
+    //        ImageUrl = entity.ImageUrl,
+    //        // A resposta correta só é revelada se o utilizador já adivinhou ou seo Admin adicionar
+    //        CorrectPlantName = "", // Por defeito não é revelado
+    //        Guesses = (entity.Guesses ?? new List<ChallengeGuess>())
+    //                    .Select(g => g.ToDto())
+    //                    .ToList()
+    //    };
+
+    //    // Verificar se o utilizador atual já adivinhou
+    //    var currentUserGuess = (entity.Guesses ?? new List<ChallengeGuess>())
+    //                             .FirstOrDefault(g => g.UserId == currentUserId);
+    //    if (currentUserGuess != null)
+    //    {
+    //        dto.HasCurrentUserGuessed = true;
+    //        // Se já adivinhou (certo ou errado), revela a resposta
+    //        dto.CorrectPlantName = entity.CorrectPlantName;
+    //    }
+
+    //    return dto;
+    //}
+
     public static DailyChallengeDto ToDto(this DailyChallenge entity, string? currentUserId = null)
     {
+        // ver se o desafio já terminou 
+        bool isChallengeOver = entity.ChallengeDate.Date < DateTime.UtcNow.Date;
+
+        // buscar os guesses 
+        var allGuesses = entity.Guesses ?? new List<ChallengeGuess>();
+
+        // palpite do user actual
+        var currentUserGuessEntity = allGuesses.FirstOrDefault(g => g.UserId == currentUserId);
+
         var dto = new DailyChallengeDto
         {
             Id = entity.Id,
             ChallengeDate = entity.ChallengeDate,
             ImageUrl = entity.ImageUrl,
-            // A resposta correta só é revelada se o utilizador já adivinhou ou seo Admin adicionar
-            CorrectPlantName = "", // Por defeito não é revelado
-            Guesses = (entity.Guesses ?? new List<ChallengeGuess>())
-                        .Select(g => g.ToDto())
-                        .ToList()
+            HasCurrentUserGuessed = (currentUserGuessEntity != null),
+            CurrentUserGuess = currentUserGuessEntity?.ToDto() 
         };
 
-        // Verificar se o utilizador atual já adivinhou
-        var currentUserGuess = (entity.Guesses ?? new List<ChallengeGuess>())
-                                 .FirstOrDefault(g => g.UserId == currentUserId);
-        if (currentUserGuess != null)
+        // se challenge já terminou, mostrar todos os guesses
+        if (isChallengeOver)
         {
-            dto.HasCurrentUserGuessed = true;
-            // Se já adivinhou (certo ou errado), revela a resposta
             dto.CorrectPlantName = entity.CorrectPlantName;
+            dto.Guesses = allGuesses.Select(g => g.ToDto()).ToList();
+        }
+        else
+        {
+            // challenge ainda não terminou
+            dto.CorrectPlantName = ""; // esconder a resposta certa
+            dto.Guesses = new List<ChallengeGuessDto>(); 
         }
 
         return dto;

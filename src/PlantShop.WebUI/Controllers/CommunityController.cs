@@ -34,25 +34,47 @@ public class CommunityController : Controller
     public async Task<IActionResult> Index()
     {
         var userId = _userManager.GetUserId(User);
+        var today = DateTime.UtcNow.Date;
 
-        // Obter o desafio de hoje
+        // buscar o challenge do dia
         var challenge = await _communityService.GetDailyChallengeForTodayAsync(userId);
 
-        // Obter todos os posts
+        // buscar todos os posts
         var posts = await _communityService.GetAllCommunityPostsAsync();
+
+        // buscar os challengses
+        var archive = await _communityService.GetChallengeArchiveAsync(userId);
 
         var viewModel = new CommunityIndexViewModel
         {
             TodayChallenge = challenge,
-            Posts = posts
+            Posts = posts,
+
+            //separar o challende do dia com os challenges antigos
+            ChallengeArchive = archive.Where(c => c.ChallengeDate.Date != today)
         };
 
         return View(viewModel);
     }
-        
+
+    //para abrir challenges antigos
+    [HttpGet("desafio/{id:guid}")]
+    public async Task<IActionResult> ChallengeDetails(Guid id)
+    {
+        var userId = _userManager.GetUserId(User);
+        var challenge = await _communityService.GetChallengeDetailsAsync(id, userId);
+
+        if (challenge == null)
+        {
+            return NotFound("Desafio não encontrado.");
+        }
+
+        return View(challenge);
+    }
+
     // GET: /comunidade/criar
     [HttpGet("criar")]
-    [Authorize] // Utilizador tem de estar logado
+    [Authorize]
     public IActionResult CreatePost()
     {        
         return View(new CommunityPostCreateViewModel());

@@ -10,5 +10,8 @@ public class DailyChallengeDto
     // para veer se utilizador já adivinhou
     public bool HasCurrentUserGuessed { get; set; } = false;
 
+    // o guess do utilizador avtual
+    public ChallengeGuessDto? CurrentUserGuess { get; set; }
+
     public ICollection<ChallengeGuessDto> Guesses { get; set; } = new List<ChallengeGuessDto>();
 }

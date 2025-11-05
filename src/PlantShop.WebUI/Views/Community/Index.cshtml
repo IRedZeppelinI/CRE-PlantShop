@@ -6,10 +6,13 @@
 <div class="row g-5">
 
     <div class="col-lg-4">
-        <div class="card shadow-sm border-0" style="position: sticky; top: 20px;">
-            <div class="card-header text-center" style="background-color: var(--primary-green); color: white;">
-                <h4 class="mb-0"><i class="bi bi-calendar-event-fill"></i> Desafio Diário</h4>
-            </div>
+
+        <div class="card-header text-center rounded-top"
+             style="background-color: var(--primary-green); color: white; border-bottom: none; margin-bottom: -1px;">
+            <h4 class="mb-0"><i class="bi bi-calendar-event-fill"></i> Desafio Diário</h4>
+        </div>
+
+        <div class="card shadow-sm border-0 rounded-bottom" style="position: sticky; top: 20px;">
 
             @if (Model.TodayChallenge == null)
             {
@@ -19,7 +22,9 @@
             }
             else
             {
-                <img src="@Model.TodayChallenge.ImageUrl" class="card-img-top" alt="Desafio Diário" style="height: 250px; object-fit: cover;">
+                <img src="@Model.TodayChallenge.ImageUrl" class="card-img-top" alt="Desafio Diário"
+                     style="height: 250px; object-fit: cover;">
+
                 <div class="card-body">
                     <h5 class="card-title text-center">Que planta é esta?</h5>
 
@@ -36,7 +41,20 @@
                     {
                         <div class="text-center p-3" style="background-color: var(--secondary-light-green); border-radius: 5px;">
                             <h6 class="mb-1">Já submeteu o seu palpite!</h6>
-                            <p class="mb-0">A resposta correta é: <strong>@Model.TodayChallenge.CorrectPlantName</strong></p>
+
+                            @if (Model.TodayChallenge.CurrentUserGuess != null)
+                            {
+                                <p class="mb-1">O seu palpite: <strong>"@Model.TodayChallenge.CurrentUserGuess.Guess"</strong></p>
+
+                                @if (Model.TodayChallenge.CurrentUserGuess.IsCorrect)
+                                {
+                                    <p class="mb-0 text-success fw-bold">Parabéns, acertou!</p>
+                                }
+                                else
+                                {
+                                    <p class="mb-0 text-danger fw-bold">Não foi desta!</p>
+                                }
+                            }
                         </div>
                     }
                     else if (User.Identity?.IsAuthenticated == true)
@@ -66,6 +84,7 @@
     </div>
 
     <div class="col-lg-8">
+
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="mb-0">Mural da Comunidade</h2>
             <a asp-action="CreatePost" class="btn btn-primary">
@@ -102,6 +121,34 @@
                                 </small>
                             </div>
                         </div>
+                    </a>
+                }
+            </div>
+        }
+
+        <hr class="my-5" />
+        <h2 class="mb-3">Desafios Anteriores</h2>
+
+        @if (!Model.ChallengeArchive.Any())
+        {
+            <div class="text-center p-4 rounded" style="background-color: var(--secondary-light-green);">
+                <p class="text-muted mb-0">Ainda não há desafios anteriores para mostrar.</p>
+            </div>
+        }
+        else
+        {
+            <div class="list-group shadow-sm">
+                @foreach (var challenge in Model.ChallengeArchive)
+                {
+                    <a asp-action="ChallengeDetails" asp-route-id="@challenge.Id" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>@challenge.ChallengeDate.ToString("D")</strong>
+                            <br>
+                            <small class="text-muted">Resposta: @challenge.CorrectPlantName</small>
+                        </div>
+                        <span class="badge bg-success rounded-pill">
+                            @challenge.Guesses.Count(g => g.IsCorrect) Vencedor(es)
+                        </span>
                     </a>
                 }
             </div>
