@@ -1,6 +1,6 @@
 ﻿@model PlantShop.WebUI.Models.Admin.DailyChallengeFormViewModel
 @{
-    ViewData["Title"] = "Gerir Desafio Diário";
+    ViewData["Title"] = "Criar Novo Desafio";
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -8,11 +8,12 @@
 
 <div class="row">
     <div class="col-md-8">
-        <form asp-action="ManageChallenge" method="post" enctype="multipart/form-data">
+        <form asp-action="CreateChallenge" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="card shadow-sm border-0">
                 <div class="card-body">
+
                     <div class="mb-3">
                         <label asp-for="ChallengeDate" class="form-label"></label>
                         <input asp-for="ChallengeDate" type="date" class="form-control" />
@@ -28,26 +29,12 @@
                     <div class="mb-3">
                         <label asp-for="ImageFile" class="form-label"></label>
                         <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
-                        @if (string.IsNullOrEmpty(Model.Challenge.ImageUrl))
-                        {
-                            <small class="text-danger">A imagem é obrigatória para um novo desafio.</small>
-                        }
                         <span asp-validation-for="ImageFile" class="text-danger"></span>
                     </div>
 
-                    @if (!string.IsNullOrEmpty(Model.Challenge.ImageUrl))
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">Imagem Atual:</label>
-                            <div>
-                                <img src="@Model.Challenge.ImageUrl" alt="Imagem do Desafio" style="max-height: 200px; border-radius: 5px;" />
-                            </div>
-                        </div>
-                    }
-
                     <div class="mt-4">
-                        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">Guardar Desafio</button>
+                        <a asp-action="Challenges" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Criar Desafio</button>
                     </div>
                 </div>
             </div>

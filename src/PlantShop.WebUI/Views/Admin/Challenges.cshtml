@@ -1,0 +1,67 @@
+﻿@model IEnumerable<PlantShop.Application.DTOs.Community.DailyChallengeDto>
+@{
+    ViewData["Title"] = "Gerir Desafios Diários";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+@if (ViewData["AdminMessage"] != null)
+{
+    <div class="alert alert-success">@ViewData["AdminMessage"]</div>
+}
+@if (ViewData["AdminError"] != null)
+{
+    <div class="alert alert-danger">@ViewData["AdminError"]</div>
+}
+
+<p>
+    <a asp-action="CreateChallenge" class="btn btn-primary">
+        <i class="bi bi-plus-circle-fill"></i> Criar Novo Desafio
+    </a>
+</p>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header">
+        <h5 class="mb-0">Desafios Agendados</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0 align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Data do Desafio</th>
+                    <th>Resposta Correta</th>
+                    <th>Imagem</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="4" class="text-center p-4 text-muted">Não existem desafios agendados.</td>
+                    </tr>
+                }
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><strong>@item.ChallengeDate.ToLocalTime().ToString("D")</strong></td>
+                        <td>@item.CorrectPlantName</td>
+                        <td>
+                            <a href="@item.ImageUrl" target="_blank">Ver Imagem</a>
+                        </td>
+                        <td class="text-end">
+                            <form asp-action="DeleteChallenge" method="post"
+                                  asp-route-challengeId="@item.Id"
+                                  onsubmit="return confirm('Tem a certeza que quer apagar este desafio?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash-fill"></i> Apagar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -27,21 +27,9 @@ public class CommunityService : ICommunityService
         _logger = logger;
     }
 
-    // --- Desafios (Leitura) ---
+    
 
-    public async Task<DailyChallengeDto?> GetDailyChallengeForTodayAsync(string? currentUserId)
-    {
-        var today = DateTime.UtcNow.Date;
-        var challenge = await _challengeRepo.GetByDateAsync(today);
-
-        if (challenge == null)
-        {
-            _logger.LogWarning("Nenhum Desafio Diário encontrado para a data: {Date}", today);
-            return null;
-        }
-
-        return challenge.ToDto(currentUserId);
-    }
+    
 
     // --- Desafios (Escrita) ---
 
@@ -152,93 +140,131 @@ public class CommunityService : ICommunityService
     }
 
 
-    // --- Admin ---
+    // --- Challenges ---
 
-    public async Task CreateOrUpdateDailyChallengeAsync(DailyChallengeDto challengeDto, Stream? imageStream, string? imageFileName, string? imageContentType)
+    //este esconde as guesses para jogadores
+    public async Task<DailyChallengeDto?> GetDailyChallengeForTodayAsync(string? currentUserId)
     {
-        var challengeDate = challengeDto.ChallengeDate.Date;
-        var existingChallenge = await _challengeRepo.GetByDateAsync(challengeDate);
+        var today = DateTime.UtcNow.Date;
+        var challenge = await _challengeRepo.GetByDateAsync(today);
 
-        if (existingChallenge == null)
+        if (challenge == null)
         {
-            
-            if (imageStream == null || imageFileName == null || imageContentType == null)
-            {
-                throw new ArgumentException("A imagem é obrigatória para criar um novo desafio.");
-            }
-
-            // Upload da imagem para challenges
-            var fileExtension = Path.GetExtension(imageFileName);
-            var newFileName = $"{Guid.NewGuid()}{fileExtension}";
-            var imageUrl = await _fileStorageService.UploadAsync(
-                imageStream, newFileName, imageContentType, "challenges");
-
-            var newChallenge = new DailyChallenge
-            {
-                Id = Guid.NewGuid(),
-                ChallengeDate = challengeDate,
-                CorrectPlantName = challengeDto.CorrectPlantName,
-                ImageUrl = imageUrl,
-                Guesses = new List<ChallengeGuess>()
-            };
-
-            await _challengeRepo.CreateAsync(newChallenge);
-            _logger.LogInformation("Novo Desafio Diário criado para {Date}", challengeDate);
-        }
-        else
-        {
-            
-            existingChallenge.CorrectPlantName = challengeDto.CorrectPlantName;
-
-            
-            if (imageStream != null && imageFileName != null && imageContentType != null)
-            {
-                var oldImageUrl = existingChallenge.ImageUrl;
-
-                // Upload da nova imagem
-                var fileExtension = Path.GetExtension(imageFileName);
-                var newFileName = $"{Guid.NewGuid()}{fileExtension}";
-                existingChallenge.ImageUrl = await _fileStorageService.UploadAsync(
-                    imageStream, newFileName, imageContentType, "challenges");
-
-                // Apaga a antiga
-                if (!string.IsNullOrEmpty(oldImageUrl))
-                {
-                    await _fileStorageService.DeleteAsync(oldImageUrl, "challenges");
-                }
-            }
-
-            await _challengeRepo.UpdateAsync(existingChallenge);
-            _logger.LogInformation("Desafio Diário atualizado para {Date}", challengeDate);
-        }
-    }
-
-    public async Task<DailyChallengeDto?> GetChallengeForAdminByDateAsync(DateTime date)
-    {
-        var challengeDate = date.Date;
-        var challengeEntity = await _challengeRepo.GetByDateAsync(challengeDate);
-
-        if (challengeEntity == null)
-        {
+            _logger.LogWarning("Nenhum Desafio Diário encontrado para a data: {Date}", today);
             return null;
         }
 
-        
-        // não esta a usar ToDto porque o mapper esconde comas respostas
+        return challenge.ToDto(currentUserId);
+    }
+
+    //este nao esconde as repostas, para o admin
+    public async Task<DailyChallengeDto?> GetChallengeByDateAsync(DateTime date)
+    {
+        var challengeDate = date.Date;
+        var challengeEntity = await _challengeRepo.GetByDateAsync(challengeDate); 
+
+        if (challengeEntity == null) return null;
+
         return new DailyChallengeDto
         {
             Id = challengeEntity.Id,
             ChallengeDate = challengeEntity.ChallengeDate,
             ImageUrl = challengeEntity.ImageUrl,
-
-            
             CorrectPlantName = challengeEntity.CorrectPlantName,
-
             Guesses = (challengeEntity.Guesses ?? new List<ChallengeGuess>())
                         .Select(g => g.ToDto())
                         .ToList()
-                                    
         };
+    }
+
+
+
+    public async Task CreateDailyChallengeAsync(DailyChallengeDto challengeDto, Stream imageStream, string imageFileName, string imageContentType)
+    {
+        var challengeDate = challengeDto.ChallengeDate.Date;
+                
+        //Ver se já existe para esse dia
+        var existingChallenge = await GetChallengeByDateAsync(challengeDate);
+        if (existingChallenge != null) 
+        {
+            
+            throw new InvalidOperationException($"Já existe um desafio agendado para o dia {challengeDate.ToShortDateString()}.");
+        }
+
+        if (imageStream == null || imageStream.Length == 0)
+        {
+            throw new ArgumentException("A imagem é obrigatória para criar um novo desafio.");
+        }
+
+        // upload imagem
+        var fileExtension = Path.GetExtension(imageFileName);
+        var newFileName = $"{Guid.NewGuid()}{fileExtension}";
+        var imageUrl = await _fileStorageService.UploadAsync(
+            imageStream, newFileName, imageContentType, "challenges");
+
+        var newChallenge = new DailyChallenge
+        {
+            Id = Guid.NewGuid(),
+            ChallengeDate = challengeDate.Date, 
+            CorrectPlantName = challengeDto.CorrectPlantName,
+            ImageUrl = imageUrl,
+            Guesses = new List<ChallengeGuess>()
+        };
+
+        await _challengeRepo.CreateAsync(newChallenge);
+        _logger.LogInformation("Novo Desafio Diário criado para {Date}", challengeDate);
+    }
+
+    public async Task DeleteDailyChallengeAsync(Guid challengeId)
+    {
+        var challenge = await _challengeRepo.GetByIdAsync(challengeId);
+        if (challenge == null)
+        {
+            throw new KeyNotFoundException("Desafio não encontrado para apagar.");
+        }
+
+        
+        await _challengeRepo.DeleteAsync(challenge);
+
+        // apagar imagem
+        if (!string.IsNullOrEmpty(challenge.ImageUrl))
+        {
+            _logger.LogInformation("A apagar imagem associada {ImageUrl}", challenge.ImageUrl);
+            await _fileStorageService.DeleteAsync(challenge.ImageUrl, "challenges");
+        }
+    }
+
+
+    
+    public async Task<DailyChallengeDto?> GetChallengeByIdAsync(Guid id)
+    {
+        var challengeEntity = await _challengeRepo.GetByIdAsync(id);
+        if (challengeEntity == null) return null;
+
+        return new DailyChallengeDto
+        {
+            Id = challengeEntity.Id,
+            ChallengeDate = challengeEntity.ChallengeDate,
+            ImageUrl = challengeEntity.ImageUrl,
+            CorrectPlantName = challengeEntity.CorrectPlantName,
+            Guesses = (challengeEntity.Guesses ?? new List<ChallengeGuess>())
+                        .Select(g => g.ToDto())
+                        .ToList()
+        };
+    }
+
+    public async Task<IEnumerable<DailyChallengeDto>> GetAllChallengesAsync()
+    {
+        var challenges = await _challengeRepo.GetAllAsync();
+
+        return challenges.Select(entity => new DailyChallengeDto
+        {
+            Id = entity.Id,
+            ChallengeDate = entity.ChallengeDate,
+            ImageUrl = entity.ImageUrl,
+            CorrectPlantName = entity.CorrectPlantName,
+            Guesses = new List<ChallengeGuessDto>() //sem carregar as guesses por perfomance
+        });
     }
 
 }

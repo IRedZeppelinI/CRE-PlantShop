@@ -8,4 +8,6 @@ public interface IDailyChallengeRepository
     Task<DailyChallenge?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default);
     Task CreateAsync(DailyChallenge challenge, CancellationToken cancellationToken = default);
     Task UpdateAsync(DailyChallenge challenge, CancellationToken cancellationToken = default);
+    Task DeleteAsync(DailyChallenge challenge, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DailyChallenge>> GetAllAsync(CancellationToken cancellationToken = default);
 }

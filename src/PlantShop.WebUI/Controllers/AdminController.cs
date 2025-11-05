@@ -557,42 +557,47 @@ public class AdminController : Controller
 
     #region Challenges
 
-    // GET: /Admin/ManageChallenge
+    // GET: /Admin/Challenges
     [HttpGet]
-    public async Task<IActionResult> ManageChallenge(DateTime? date)
+    public async Task<IActionResult> Challenges(DateTime? date)
     { 
-        var challengeDate = date ?? DateTime.UtcNow.Date;
-
-
-        var challengeDto = await _communityService.GetChallengeForAdminByDateAsync(challengeDate);
-        // TODO: acrescentar um  get all
-
-        var viewModel = new DailyChallengeFormViewModel
+        var challenges = await _communityService.GetAllChallengesAsync();
+        
+        if (TempData["AdminMessage"] != null)
         {
-            ChallengeDate = challengeDate
-        };
-
-        if (challengeDto != null)
-        {
-            viewModel.Challenge = challengeDto;
+            ViewData["AdminMessage"] = TempData["AdminMessage"];
         }
-        else
+        if (TempData["AdminError"] != null)
         {
-            viewModel.Challenge = new DailyChallengeDto();
+            ViewData["AdminError"] = TempData["AdminError"];
         }
 
-        return View(viewModel);
+        return View(challenges);
     }
 
-    // POST: /Admin/ManageChallenge
+    [HttpGet]
+    public IActionResult CreateChallenge()
+    {
+        var viewModel = new DailyChallengeFormViewModel
+        {
+            ChallengeDate = DateTime.UtcNow.Date,
+            Challenge = new DailyChallengeDto()
+        };
+        return View(viewModel); 
+    }
+
+    // POST: /Admin/CreateChallenge
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ManageChallenge(DailyChallengeFormViewModel viewModel)
+    public async Task<IActionResult> CreateChallenge(DailyChallengeFormViewModel viewModel)
     {
-        //validação
         if (viewModel.Challenge.CorrectPlantName == null)
         {
             ModelState.AddModelError("Challenge.CorrectPlantName", "O nome da planta é obrigatório.");
+        }
+        if (viewModel.ImageFile == null || viewModel.ImageFile.Length == 0)
+        {
+            ModelState.AddModelError("ImageFile", "A imagem é obrigatória.");
         }
 
         if (!ModelState.IsValid)
@@ -602,42 +607,56 @@ public class AdminController : Controller
 
         try
         {
-            //imnagem
-            Stream? imageStream = null;
-            string? imageFileName = null;
-            string? imageContentType = null;
+            await using var imageStream = viewModel.ImageFile!.OpenReadStream();
 
-            if (viewModel.ImageFile != null && viewModel.ImageFile.Length > 0)
-            {
-                imageStream = viewModel.ImageFile.OpenReadStream();
-                imageFileName = viewModel.ImageFile.FileName;
-                imageContentType = viewModel.ImageFile.ContentType;
-            }
-
-            // dto para o serviço
             var dto = new DailyChallengeDto
             {
                 ChallengeDate = viewModel.ChallengeDate,
-                CorrectPlantName = viewModel.Challenge.CorrectPlantName!
+                CorrectPlantName = viewModel.Challenge.CorrectPlantName
             };
 
-            // criar ou actualizar
-            await _communityService.CreateOrUpdateDailyChallengeAsync(
+            await _communityService.CreateDailyChallengeAsync(
                 dto,
                 imageStream,
-                imageFileName,
-                imageContentType
+                viewModel.ImageFile.FileName,
+                viewModel.ImageFile.ContentType
             );
 
-            TempData["AdminMessage"] = $"Desafio para {viewModel.ChallengeDate.ToShortDateString()} guardado com sucesso.";
-            return RedirectToAction(nameof(Index));
+            TempData["AdminMessage"] = $"Desafio para {viewModel.ChallengeDate.ToShortDateString()} criado com sucesso.";
+
+            return RedirectToAction(nameof(Challenges));
+        }
+        catch (InvalidOperationException ex) 
+        {
+            _logger.LogWarning(ex, "Admin tentou criar desafio duplicado para {Date}", viewModel.ChallengeDate);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View(viewModel);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao guardar o Desafio Diário para {Date}", viewModel.ChallengeDate);
-            ModelState.AddModelError(string.Empty, $"Erro ao guardar: {ex.Message}");
+            _logger.LogError(ex, "Erro ao criar o Desafio Diário para {Date}", viewModel.ChallengeDate);
+            ModelState.AddModelError(string.Empty, $"Erro ao criar: {ex.Message}");
             return View(viewModel);
         }
+    }
+
+    
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteChallenge(Guid challengeId, DateTime challengeDate)
+    {
+        try
+        {
+            await _communityService.DeleteDailyChallengeAsync(challengeId);
+            TempData["AdminMessage"] = $"Desafio apagado com sucesso.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao apagar o Desafio Diário {ChallengeId}", challengeId);
+            TempData["AdminError"] = $"Erro ao apagar: {ex.Message}";
+        }
+
+        return RedirectToAction(nameof(Challenges));
     }
 
     #endregion

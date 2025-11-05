@@ -22,7 +22,13 @@ public interface ICommunityService
 
 
     // --- Admin ---
-    Task CreateOrUpdateDailyChallengeAsync(DailyChallengeDto challengeDto, Stream? imageStream, string? imageFileName, string? imageContentType);
+    
+    Task CreateDailyChallengeAsync(DailyChallengeDto challengeDto, Stream imageStream, string imageFileName, string imageContentType);
 
-    Task<DailyChallengeDto?> GetChallengeForAdminByDateAsync(DateTime date);
+    Task<DailyChallengeDto?> GetChallengeByDateAsync(DateTime date);
+
+    Task DeleteDailyChallengeAsync(Guid challengeId);
+
+    Task<DailyChallengeDto?> GetChallengeByIdAsync(Guid id);
+    Task<IEnumerable<DailyChallengeDto>> GetAllChallengesAsync();
 }

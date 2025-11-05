@@ -37,8 +37,9 @@ public class DailyChallengeRepository : IDailyChallengeRepository
         // Normaliza a data para garantir apenas Dia/Mês/Ano
         var dateString = date.Date.ToString("yyyy-MM-dd");
 
-        // 2. Mudar a query para usar STARTSWITH
-        // Isto irá corresponder a "2025-11-04T00:00:00"
+        
+        // Estoua  usar startswitth porque estou a gravar com horas também - 2025-11-04T00:00:00
+        //TODO refactor para não estar a usar startwith
         var query = new QueryDefinition("SELECT TOP 1 * FROM c WHERE STARTSWITH(c.challengeDate, @dateString)")
             .WithParameter("@dateString", dateString);
 
@@ -92,4 +93,37 @@ public class DailyChallengeRepository : IDailyChallengeRepository
             throw;
         }
     }
+        
+    public async Task DeleteAsync(DailyChallenge challenge, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _challengeContainer.DeleteItemAsync<DailyChallenge>(
+                challenge.Id.ToString(),
+                new PartitionKey(challenge.Id.ToString()),
+                cancellationToken: cancellationToken);
+        }
+        catch (CosmosException ex)
+        {
+            _logger.LogError(ex, "Falha ao apagar DailyChallenge (Id: {ChallengeId}) no Cosmos DB.", challenge.Id);
+            throw;
+        }
+    }
+
+    
+    public async Task<IEnumerable<DailyChallenge>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var query = new QueryDefinition("SELECT * FROM c ORDER BY c.challengeDate DESC");
+
+        var results = new List<DailyChallenge>();
+        using var feed = _challengeContainer.GetItemQueryIterator<DailyChallenge>(query);
+
+        while (feed.HasMoreResults)
+        {
+            var response = await feed.ReadNextAsync(cancellationToken);
+            results.AddRange(response.Resource);
+        }
+
+        return results;
+    }    
 }
