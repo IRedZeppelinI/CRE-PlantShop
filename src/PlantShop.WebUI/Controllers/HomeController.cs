@@ -1,21 +1,32 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using PlantShop.Application.Interfaces.Services.Shop;
 using PlantShop.WebUI.Models;
+using PlantShop.WebUI.Models.Home;
+using System.Diagnostics;
 
 namespace PlantShop.WebUI.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly IArticleService _articleService;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, IArticleService articleService)
     {
         _logger = logger;
+        _articleService = articleService;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        return View();
+        var featured = await _articleService.GetFeaturedArticlesAsync();
+
+        var viewModel = new HomeViewModel
+        {
+            FeaturedArticles = featured
+        };
+
+        return View(viewModel);
     }
 
     public IActionResult Privacy()
