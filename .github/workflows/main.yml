@@ -56,6 +56,16 @@ jobs:
         name: test-results
         path: '**/*.trx' 
         retention-days: 7
+
+      # publicar os resultads para o github
+    - name: Report Test Results 
+      if: always() 
+      uses: dorny/test-reporter@v1
+      with:
+        name: 📊 Relatório de Testes (.NET)
+        path: '**/*.trx'         
+        reporter: dotnet-trx     
+        fail-on-error: 'false'   # Não falha a pipeline se o relatório der erro
     
     - name: Stop and Clean CI Containers # A limpar os containers da pipeline sem mexer nos de dev local
       if: always()
