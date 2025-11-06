@@ -22,13 +22,17 @@ jobs:
         dotnet-version: '9.0.x'
 
     - name: Clean up previous CI run
-      run: docker-compose -f docker-compose.yml -f docker-compose.ci.yml -p plantshop_ci down
-
-      #Notas por usar self-hosted
-      #a usar o segundo yml como overwite do volume para não utilizar volume que uso para desenvolvimento
+      env: #por usar self hosted, para não ter que parar os containers de dev local estou a definir ports unicos
+          POSTGRES_PORT: 5434
+          PGADMIN_PORT: 5051
+      run: docker-compose -p plantshop_ci down --volumes #a usar --project para não usar mesmo stack name que dev local
+      
     - name: Start Postgres Container (CI Mode) 
-      run: docker-compose -f docker-compose.yml -f docker-compose.ci.yml -p plantshop_ci up -d 
-      # a utilizar --project para dar um nome único ao grupo de containers e não fazer conflicto com local     
+      env:
+          POSTGRES_PORT: 5434
+          PGADMIN_PORT: 5051
+      run: docker-compose -p plantshop_ci up -d
+          
     
       #a dar um tempo de espera para o arranque do container
     - name: Wait for Postgres to be ready
@@ -41,8 +45,7 @@ jobs:
       run: dotnet build PlantShop.sln --no-restore --configuration Release
         
     - name: Test
-      env: #a utlizar connection string propria para usar ports de docker-compose override de forma a não fazer conflicto
-            # com containers locais de desenvolvimento (devido a self-hosted)
+      env: #a passar connection string propria para não usar a de appsettings que aponta para o container de dev local
         ConnectionStrings__DefaultConnection: "Host=localhost;Port=5434;Database=plantshop_ci_test_db;Username=postgres;Password=mysecretpassword"
       run: dotnet test PlantShop.sln --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
@@ -56,4 +59,7 @@ jobs:
     
     - name: Stop and Clean CI Containers # A limpar os containers da pipeline sem mexer nos de dev local
       if: always()
-      run: docker-compose -f docker-compose.yml -f docker-compose.ci.yml -p plantshop_ci down
+      env:
+          POSTGRES_PORT: 5434
+          PGADMIN_PORT: 5051
+      run: docker-compose -p plantshop_ci down --volumes
