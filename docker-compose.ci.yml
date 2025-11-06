@@ -1,13 +1,16 @@
-# Para SOBREPOR volumes do docker-compose.yml e não usar em CI
-
+# Para SOBREPOR volumes do docker-compose.yml e não usar volumes em  CI assim como ports diferentes
 
 version: '3.8'
 
 services:
-  plantshop-postgres-db:
+  plantshop-postgres-db:    
     volumes: [] 
+    ports:
+      - "5434:5432"
                 
   
-  plantshop-pgadmin:
+  plantshop-pgadmin:    
     volumes: [] 
+    ports:
+      - "5051:80" 
                 
