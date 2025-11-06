@@ -30,8 +30,18 @@ jobs:
     - name: Build
       run: dotnet build PlantShop.sln --no-restore --configuration Release
     
+    #- name: Test
+     # run: dotnet test PlantShop.sln --no-build --configuration Release --verbosity normal
     - name: Test
-      run: dotnet test PlantShop.sln --no-build --configuration Release --verbosity normal
+      run: dotnet test PlantShop.sln --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+    - name: Publish Test Results
+      if: always() 
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: '**/*.trx' 
+        retention-days: 7
     
     - name: Stop Postgres Container
       if: always()
