@@ -1,0 +1,13 @@
+# Para SOBREPOR volumes do docker-compose.yml e não usar em CI
+
+
+version: '3.8'
+
+services:
+  plantshop-postgres-db:
+    volumes: [] 
+                
+  
+  plantshop-pgadmin:
+    volumes: [] 
+                
