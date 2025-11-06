@@ -81,3 +81,27 @@ jobs:
           POSTGRES_PORT: 5434
           PGADMIN_PORT: 5051
       run: docker-compose -p plantshop_ci down --volumes
+
+
+  deploy-to-azure:
+    needs: build-and-test
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    # --- Login  Azure ---        
+    - name: 'Az CLI Login'
+      uses: azure/login@v1
+      with:        
+        creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}"}'
+
+
+    - name: Restore .NET local tools
+      run: dotnet tool restore
