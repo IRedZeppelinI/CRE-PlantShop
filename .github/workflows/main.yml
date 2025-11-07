@@ -105,3 +105,8 @@ jobs:
 
     - name: Restore .NET local tools
       run: dotnet tool restore
+
+    - name: Run EF Migrations
+      env:
+        ConnectionStrings__DefaultConnection: ${{ secrets.AZURE_POSTGRES_CONNECTION }}
+      run: dotnet ef database update --project .\src\PlantShop.Infrastructure\PlantShop.Infrastructure.csproj --startup-project .\src\PlantShop.WebUI\PlantShop.WebUI.csproj
