@@ -117,3 +117,13 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # build da imagem e push da imagem para docker hub
+    - name: Build and push to Docker Hub
+      uses: docker/build-push-action@v5
+      with:
+        context: .  
+        push: true  
+        tags: |     
+          redzeppelin/cre-plantshop:latest
+          redzeppelin/cre-plantshop:${{ github.sha }}
