@@ -122,8 +122,8 @@ public static class DataSeeder
         UserManager<AppUser> userManager)
     {
         
-        await context.Database.MigrateAsync();
-        Debug.WriteLine("Database migrations checked/applied.");
+        //await context.Database.MigrateAsync();
+        //Debug.WriteLine("Database migrations checked/applied.");
                 
         await SeedRolesAsync(roleManager);
         await SeedAdminUserAsync(userManager);
