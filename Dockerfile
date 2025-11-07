@@ -8,13 +8,12 @@ ENV ASPNETCORE_URLS=http://+:8080
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY ["PlantShop.sln", "."]
 COPY ["src/PlantShop.Application/PlantShop.Application.csproj", "src/PlantShop.Application/"]
 COPY ["src/PlantShop.Domain/PlantShop.Domain.csproj", "src/PlantShop.Domain/"]
 COPY ["src/PlantShop.Infrastructure/PlantShop.Infrastructure.csproj", "src/PlantShop.Infrastructure/"]
 COPY ["src/PlantShop.WebUI/PlantShop.WebUI.csproj", "src/PlantShop.WebUI/"]
 
-RUN dotnet restore "PlantShop.sln"
+RUN dotnet restore "src/PlantShop.WebUI/PlantShop.WebUI.csproj"
 
 COPY . .
 
