@@ -2,8 +2,7 @@ version: '3.8'
 
 services:
   plantshop-postgres-db:
-    image: postgres:latest
-    # container_name: plantshop-db-container
+    image: postgres:latest    
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=mysecretpassword 
@@ -15,8 +14,7 @@ services:
 
   
   plantshop-pgadmin:
-    image: dpage/pgadmin4:latest
-    # container_name: plantshop-pgadmin-container
+    image: dpage/pgadmin4:latest    
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@admin.com
       - PGADMIN_DEFAULT_PASSWORD=admin

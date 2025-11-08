@@ -3,8 +3,8 @@ name: CI CD para CRE CLOUD- 89104/2025 PlantShop
 on:
   workflow_dispatch:
 
-  # push:
-  #   branches: [ "main" ]
+  push:
+    branches: [ "main" ]
 
   pull_request:
     branches: [ "main" ]
@@ -16,9 +16,9 @@ jobs:
     runs-on: self-hosted
 
     permissions:
-      checks: write       # permissão necessária para enviar summary dos testes
-      actions: read       # permissão por defeito, adicionada só para ser explicitp
-      pull-requests: read # Necessário se for executado num pull request
+      checks: write       # permissão necessária para enviar summary dos testes para o github
+      actions: read       
+      pull-requests: read 
 
     steps:    
     - name: Checkout repository
@@ -29,13 +29,14 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
+    #testes de integração necessitam de container com BD
     - name: Clean up previous CI run
       env: #por usar self hosted, para não ter que parar os containers de dev local estou a definir ports unicos
           POSTGRES_PORT: 5434
           PGADMIN_PORT: 5051
       run: docker-compose -p plantshop_ci down --volumes #a usar --project para não usar mesmo stack name que dev local
       
-    - name: Start Postgres Container (CI Mode) 
+    - name: Start Postgres Container
       env:
           POSTGRES_PORT: 5434
           PGADMIN_PORT: 5051
@@ -70,7 +71,7 @@ jobs:
       if: always() 
       uses: dorny/test-reporter@v1
       with:
-        name: 📊 Relatório de Testes (.NET)
+        name: Relatório de Testes
         path: '**/*.trx'         
         reporter: dotnet-trx     
         fail-on-error: 'false'   # Não falha a pipeline se o relatório der erro
@@ -96,13 +97,13 @@ jobs:
       with:
         dotnet-version: '9.0.x'
         
-    # --- Login  Azure ---        
-    - name: 'Az CLI Login'
+    #  Login  Azure        
+    - name: 'Az Login'
       uses: azure/login@v1
       with:        
         creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}"}'
 
-
+        # o manifest onde tenho EF como local tool
     - name: Restore .NET local tools
       run: dotnet tool restore
 
