@@ -127,3 +127,11 @@ jobs:
         tags: |     
           redzeppelin/cre-plantshop:latest
           redzeppelin/cre-plantshop:${{ github.sha }}
+
+    #  Deplot em App Service
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:        
+        app-name: ${{ secrets.AZURE_WEBAPP_NAME }}        
+        
+        images: 'redzeppelin/cre-plantshop:${{ github.sha }}'
