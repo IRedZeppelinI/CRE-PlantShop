@@ -56,7 +56,7 @@ public class BlobStorageService : IFileStorageService
         }
         catch (Exception ex)
         {
-            // Não falhar a operação se o delete falhar (ex: ficheiro não existe)
+            // Não sobe a excepção se o delete falhar
             _logger.LogWarning(ex, "Falha ao tentar apagar o blob: {FileUrl}", fileUrl);
         }
     }

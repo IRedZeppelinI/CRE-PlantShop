@@ -5,6 +5,7 @@ using PlantShop.WebUI.Models.Account;
 
 namespace PlantShop.WebUI.Controllers;
 
+[Route("conta")]
 public class AccountController : Controller
 {
     private readonly UserManager<AppUser> _userManager;
@@ -21,16 +22,17 @@ public class AccountController : Controller
         _logger = logger;
     }
 
-    // --- REGISTO ---
-
+    //  REGISTO     
     [HttpGet]
+    [Route("registar")]
     public IActionResult Register()
     {
         return View();
     }
 
-    [HttpPost]
+    [HttpPost]    
     [ValidateAntiForgeryToken]
+    [Route("registar")]
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
         if (!ModelState.IsValid)
@@ -41,9 +43,9 @@ public class AccountController : Controller
         var user = new AppUser
         {
             FullName = model.FullName,
-            UserName = model.UserName, // O campo que adicionámos
+            UserName = model.UserName, 
             Email = model.Email
-            // O seu 'Address' será preenchido noutra altura (ex: checkout ou perfil)
+            // sem address que só é pedido quando necessário
         };
 
         var result = await _userManager.CreateAsync(user, model.Password);
@@ -55,38 +57,36 @@ public class AccountController : Controller
             await _userManager.AddToRoleAsync(user, "Customer");
 
             await _signInManager.SignInAsync(user, isPersistent: false);
-
-            // Redireciona para a página principal
+                        
             return RedirectToAction("Index", "Home");
         }
 
-        // Se chegou aqui, algo falhou. Adiciona os erros ao ModelState.
+        
         foreach (var error in result.Errors)
-        {
-            // Erros comuns: "Username 'x' is already taken.", "Email 'y' is already taken."
+        {            
             ModelState.AddModelError(string.Empty, error.Description);
         }
 
         return View(model);
     }
 
-    // --- LOGIN ---
+    //LOGIN   
 
     [HttpGet]
+    [Route("login")]
     public IActionResult Login(string? returnUrl = null)
-    {
-        // Guarda o returnUrl para o caso de o login falhar e ter de 
-        // submeter o formulário novamente.
+    {        
         ViewData["ReturnUrl"] = returnUrl;
         return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Route("login")]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         // Atribui o returnUrl do ViewData (caso o modelo falhe) ou do próprio modelo.
-        // O "??" assegura que / (raiz) é o fallback.
+        // returnUrl do viewData ou do modelo ou em último caso +ra "/"
         string returnUrl = ViewData["ReturnUrl"] as string ?? model.ReturnUrl ?? "/";
 
         if (!ModelState.IsValid)
@@ -103,20 +103,20 @@ public class AccountController : Controller
         }
 
 
-        // Tenta fazer o login. 
-        // O 'lockoutOnFailure: false' significa que não bloqueamos a conta 
-        // após X tentativas falhadas (pode ser ativado na configuração do Identity)
+
+        // lockoutOnFailure para não bloquear a conta após tentaticas falhadas
         var result = await _signInManager.PasswordSignInAsync(
-            user.UserName!,    // Nota: O Identity permite fazer login com Email ou UserName
+            user.UserName!,    
             model.Password,
-            model.RememberMe, // isPersistent
+            model.RememberMe, 
             lockoutOnFailure: false);
 
         if (result.Succeeded)
         {
             _logger.LogInformation("Utilizador fez login.");
 
-            // Verifica se o returnUrl é local para evitar "Open Redirect Attacks"
+            // verifica se o returnUrl é local para evitar "Open Redirect Attacks"
+            // padrão sugerido pela microsodft
             if (Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
@@ -134,16 +134,16 @@ public class AccountController : Controller
         }
     }
 
-    // --- LOGOUT ---
+    //LOGOUT
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Route("logout")]
     public async Task<IActionResult> Logout()
     {
         await _signInManager.SignOutAsync();
         _logger.LogInformation("Utilizador fez logout.");
-
-        // Após o logout, o melhor sítio para ir é a página principal.
+        
         return RedirectToAction("Index", "Home");
     }
 }

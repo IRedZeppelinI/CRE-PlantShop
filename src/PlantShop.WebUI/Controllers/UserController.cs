@@ -26,7 +26,7 @@ public class UserController : Controller
         _logger = logger;
     }
 
-    // GET: /utilizador/perfil
+    
     [HttpGet("perfil")]
     public async Task<IActionResult> Profile()
     {
@@ -46,7 +46,7 @@ public class UserController : Controller
             }
         };
 
-        // Verificar se há mensagens de sucesso (após guardar morada)
+        // ver se há msgs de sucesso (após guardar morada)
         if (TempData["ProfileMessage"] != null)
         {
             ViewData["ProfileMessage"] = TempData["ProfileMessage"];
@@ -55,7 +55,7 @@ public class UserController : Controller
         return View(viewModel);
     }
 
-    // POST: /utilizador/perfil (Para atualizar a morada)
+    // para atualizar a morada
     [HttpPost("perfil")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Profile(ProfileViewModel model)
@@ -72,7 +72,7 @@ public class UserController : Controller
             return View(model);
         }
 
-        // Atualizar a morada do utilizador
+        
         user.Address = model.AddressInfo.Address;
         var result = await _userManager.UpdateAsync(user);
 
@@ -84,13 +84,13 @@ public class UserController : Controller
         else
         {
             _logger.LogError("Falha ao atualizar morada para UserId: {UserId}", user.Id);
-            // Adicionar erros do Identity ao ModelState
+            //  erros vêm de MS.Identity
             foreach (var error in result.Errors)
             {
                 ModelState.AddModelError("AddressInfo.Address", error.Description);
             }
 
-            // Recarregar dados antes de devolver a view
+            // recarregar data para devolver view
             model.OrderHistory = await _orderService.GetOrdersForUserAsync(user.Id);
             model.FullName = user.FullName;
             return View(model);
@@ -99,7 +99,7 @@ public class UserController : Controller
         return RedirectToAction(nameof(Profile));
     }
 
-    // GET: /utilizador/encomenda/5
+    
     [HttpGet("encomenda/{orderId:int}")]
     public async Task<IActionResult> OrderDetails(int orderId)
     {
@@ -111,8 +111,7 @@ public class UserController : Controller
             _logger.LogWarning("Acesso negado à encomenda {OrderId} para UserId {UserId}", orderId, userId);
             return NotFound("Encomenda não encontrada ou não lhe pertence.");
         }
-
-        // A reutilizar a vista de detalhes do Admin
+                
         return View(order);
     }
 }

@@ -31,7 +31,7 @@ public class CommunityService : ICommunityService
 
     
 
-    // --- Desafios (Escrita) ---
+    // Challenges
 
     public async Task<bool> SubmitGuessAsync(Guid challengeId, string guessText, string userId, string userName)
     {
@@ -70,7 +70,7 @@ public class CommunityService : ICommunityService
         return isCorrect;
     }
 
-    // --- Posts (Leitura) ---
+    //Posts 
 
     public async Task<IEnumerable<CommunityPostDto>> GetAllCommunityPostsAsync()
     {
@@ -83,12 +83,11 @@ public class CommunityService : ICommunityService
         var post = await _postRepo.GetByIdAsync(postId);
         return post?.ToDto();
     }
-
-    // --- Posts (Escrita) ---
+        
 
     public async Task<CommunityPostDto> CreateCommunityPostAsync(CommunityPostDto postDto, Stream imageStream, string imageFileName, string imageContentType, string authorId, string authorName)
     {
-        //  Upload da Imagem para o Blob Storage 
+        //Upload img para Blob Storage 
         var fileExtension = Path.GetExtension(imageFileName);
         var newFileName = $"{Guid.NewGuid()}{fileExtension}";
 
@@ -97,7 +96,7 @@ public class CommunityService : ICommunityService
         var imageUrl = await _fileStorageService.UploadAsync(
             imageStream, newFileName, imageContentType, "posts"); 
 
-        // Criar a Entidade de Domínio
+        
         var newPost = new CommunityPost
         {
             Id = Guid.NewGuid(),
@@ -140,8 +139,7 @@ public class CommunityService : ICommunityService
     }
 
 
-    // --- Challenges ---
-
+    // Challenges 
     //este esconde as guesses para jogadores
     public async Task<DailyChallengeDto?> GetDailyChallengeForTodayAsync(string? currentUserId)
     {

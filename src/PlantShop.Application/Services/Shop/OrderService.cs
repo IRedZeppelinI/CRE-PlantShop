@@ -23,7 +23,7 @@ public class OrderService : IOrderService
         
     public async Task<OrderDto> CreateOrderAsync(
         string userId,
-        IEnumerable<CartItemCreateDto> cartItems,
+        IEnumerable<CartItemDto> cartItems,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Iniciando criação de encomenda para UserId: {UserId}", userId);

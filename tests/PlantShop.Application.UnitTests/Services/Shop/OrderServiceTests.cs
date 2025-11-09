@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using PlantShop.Application.DTOs.Messaging;
+using PlantShop.Application.DTOs.Shop;
 using PlantShop.Application.Interfaces.Infrastructure;
 using PlantShop.Application.Interfaces.Persistence;
 using PlantShop.Application.Interfaces.Services.Shop;
@@ -52,7 +53,7 @@ public class OrderServiceTests
     {
         // Arrange
         var userId = "invalid-user";
-        var cartItems = new List<CartItemCreateDto> { new CartItemCreateDto { ArticleId = 1, Quantity = 1 } };
+        var cartItems = new List<CartItemDto> { new CartItemDto { ArticleId = 1, Quantity = 1 } };
         _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((AppUser?)null);
 
@@ -71,7 +72,7 @@ public class OrderServiceTests
         // Arrange
         var userId = "user-no-address";
         var user = new AppUser { Id = userId, FullName = "Test User", Address = null };
-        var cartItems = new List<CartItemCreateDto> { new CartItemCreateDto { ArticleId = 1, Quantity = 1 } };
+        var cartItems = new List<CartItemDto> { new CartItemDto { ArticleId = 1, Quantity = 1 } };
 
         _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
@@ -91,7 +92,7 @@ public class OrderServiceTests
         // Arrange
         var userId = "valid-user";
         var user = new AppUser { Id = userId, FullName = "Test User", Address = "123 Main St" };
-        var emptyCart = new List<CartItemCreateDto>();
+        var emptyCart = new List<CartItemDto>();
 
         _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
@@ -110,7 +111,7 @@ public class OrderServiceTests
         // Arrange
         var userId = "valid-user";
         var user = new AppUser { Id = userId, FullName = "Test User", Address = "123 Main St" };
-        var cartItems = new List<CartItemCreateDto> { new CartItemCreateDto { ArticleId = 99, Quantity = 1 } };
+        var cartItems = new List<CartItemDto> { new CartItemDto { ArticleId = 99, Quantity = 1 } };
 
         _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
@@ -132,7 +133,7 @@ public class OrderServiceTests
         var userId = "valid-user";
         var user = new AppUser { Id = userId, FullName = "Test User", Address = "123 Main St" };
         var article = new Article { Id = 1, Name = "Rosa", Price = 10, StockQuantity = 1 };
-        var cartItems = new List<CartItemCreateDto> { new CartItemCreateDto { ArticleId = 1, Quantity = 2 } };
+        var cartItems = new List<CartItemDto> { new CartItemDto { ArticleId = 1, Quantity = 2 } };
 
         _mockAppUserRepo.Setup(r => r.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
@@ -157,10 +158,10 @@ public class OrderServiceTests
         var article1 = new Article { Id = 1, Name = "Rosa", Price = 10m, StockQuantity = 5 };
         var article2 = new Article { Id = 2, Name = "Lírio", Price = 5m, StockQuantity = 10 };
 
-        var cartItems = new List<CartItemCreateDto>
+        var cartItems = new List<CartItemDto>
         {
-            new CartItemCreateDto { ArticleId = 1, Quantity = 2 },
-            new CartItemCreateDto { ArticleId = 2, Quantity = 1 }
+            new CartItemDto { ArticleId = 1, Quantity = 2 },
+            new CartItemDto { ArticleId = 2, Quantity = 1 }
         };
 
         Order? capturedOrder = null;

@@ -33,8 +33,7 @@ public class DailyChallengeRepository : IDailyChallengeRepository
     }
 
     public async Task<DailyChallenge?> GetByDateAsync(DateTime date, CancellationToken cancellationToken = default)
-    {
-        // Normaliza a data para garantir apenas Dia/Mês/Ano
+    {        
         var dateString = date.Date.ToString("yyyy-MM-dd");
 
         

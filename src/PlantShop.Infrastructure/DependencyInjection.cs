@@ -46,8 +46,7 @@ public static class DependencyInjection
 
 
         //Azure
-        //Blobs
-        //services.AddSingleton(x => new BlobServiceClient(StorageAccountConnectionString));
+        //Blobs        
         services.AddSingleton(serviceProvider => new BlobServiceClient(StorageAccountConnectionString));
         services.AddScoped<IFileStorageService, BlobStorageService>();
 

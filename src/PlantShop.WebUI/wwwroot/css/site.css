@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
 
-/* Variáveis de Cor (CSS Variables) */
+/* variaiveis css*/
 :root {
-    --primary-green: #4C7031; /* Um verde-oliva profundo */
-    --secondary-light-green: #F3F8F0; /* Um verde muito claro para fundos */
+    --primary-green: #4C7031; /*  verde-oliva  */
+    --secondary-light-green: #F3F8F0; /*  verde muito claro para fundos */
     --bs-font-sans-serif: 'Nunito', sans-serif;
     --bs-body-font-family: var(--bs-font-sans-serif);
 }
@@ -33,7 +33,6 @@ body {
 }
 
 /* --- Estilo da NavBar --- */
-/* Usamos a classe .bg-primary do Bootstrap e mudamos a sua cor */
 .navbar-dark.bg-primary {
     background-color: var(--primary-green) !important;
 }
@@ -43,14 +42,13 @@ body {
 }
 
 /* --- Estilo de Botões --- */
-/* Mudar a cor primária dos botões */
 .btn-primary {
     background-color: var(--primary-green);
     border-color: var(--primary-green);
 }
 
     .btn-primary:hover {
-        background-color: #3e5a27; /* Um pouco mais escuro no hover */
+        background-color: #3e5a27; /*  mais escuro no hover */
         border-color: #3e5a27;
     }
 

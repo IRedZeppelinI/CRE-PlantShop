@@ -4,6 +4,7 @@ using PlantShop.Domain.Entities;
 
 namespace PlantShop.Infrastructure.Persistence.Configurations;
 
+//conf de app user à parte por entidade utilizar Identity
 public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 {
     public void Configure(EntityTypeBuilder<AppUser> builder)

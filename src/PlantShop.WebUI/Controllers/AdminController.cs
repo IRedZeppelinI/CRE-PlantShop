@@ -83,7 +83,7 @@ public class AdminController : Controller
         try
         {
             await _categoryService.CreateCategoryAsync(categoryDto);
-            // TODO: Adicionar TempData para mensagem de sucesso
+            
             return RedirectToAction(nameof(Categories));
         }
         catch (Exception ex)
@@ -159,26 +159,25 @@ public class AdminController : Controller
         try
         {
             await _categoryService.DeleteCategoryAsync(id);
-            // TODO: Adicionar TempData para mensagem de sucesso
+            
             return RedirectToAction(nameof(Categories));
         }
         catch (KeyNotFoundException)
         {
             return NotFound();
         }
-        catch (InvalidOperationException ex) // Ex: Tentar apagar com artigos
+        catch (InvalidOperationException ex)  //qd delete de categoria com artigos
         {
             _logger.LogWarning(ex, "Tentativa de apagar categoria com artigos.");
-            // Idealmente, usamos TempData para mostrar este erro na view Categories
-            // Por agora, redirecionamos para uma view de erro
+            
             var category = await _categoryService.GetCategoryByIdAsync(id);
-            ModelState.AddModelError(string.Empty, ex.Message); // Apanha a mensagem "Cannot delete..."
+            ModelState.AddModelError(string.Empty, ex.Message); 
             return View(category);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao apagar categoria.");
-            // Redireciona de volta para a view de confirmação com o erro
+            
             var category = await _categoryService.GetCategoryByIdAsync(id);
             ModelState.AddModelError(string.Empty, "Ocorreu um erro inesperado.");
             return View(category);
@@ -192,7 +191,7 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> Articles()
     {
-        // O ArticleDto já inclui o CategoryName
+        // Dto já inclui o CategoryName
         var articles = await _articleService.GetAllArticlesAsync();
         return View(articles);
     }
@@ -208,7 +207,7 @@ public class AdminController : Controller
 
         // carregar as categorias para o dropdown
         await PopulateCategoriesDropdown();
-        //return View(new ArticleDto { StockQuantity = 10, IsFeatured = false });
+        
         return View(viewModel);
     }
 
@@ -272,7 +271,7 @@ public class AdminController : Controller
             return NotFound();
         }
 
-        // Criar o ViewModel
+        
         var viewModel = new ArticleFormViewModel
         {
             Article = articleDto
@@ -282,7 +281,7 @@ public class AdminController : Controller
         return View(viewModel);
     }
 
-    // POST: /Admin/EditArticle/5
+    // POST: /Admin/EditArticle/int id
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditArticle(int id, ArticleFormViewModel viewModel)
@@ -345,7 +344,7 @@ public class AdminController : Controller
         {
             return NotFound();
         }
-        // O Dto já tem o CategoryName, por isso não precisamos de mais nada
+        
         return View(article);
     }
 
@@ -363,7 +362,7 @@ public class AdminController : Controller
         {
             return NotFound();
         }
-        catch (InvalidOperationException ex) // Ex: Tentar apagar com OrderItems
+        catch (InvalidOperationException ex) // por exemplo apagar com OrderItems
         {
             _logger.LogWarning(ex, "Tentativa de apagar artigo associado a encomendas.");
             var article = await _articleService.GetArticleByIdAsync(id);
@@ -394,7 +393,7 @@ public class AdminController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao carregar a lista de encomendas no Admin.");
-            // TODO: Criar uma view de erro melhor para o Admin
+            // TODO: tavez criar  view error excl para Admin
             return View("Error", "Home");
         }
     }
@@ -438,7 +437,7 @@ public class AdminController : Controller
             TempData["OrderError"] = $"Erro ao processar envio: {ex.Message}";
         }
 
-        // Redireciona de volta para a pag de detalhes onde o admin estava
+        //redireciona backto pag de detalhes onde o admin estava
         return RedirectToAction(nameof(OrderDetails), new { id = orderId });
     }
 
@@ -469,7 +468,7 @@ public class AdminController : Controller
         return View(userViewModels);
     }
 
-    // GET: /Admin/ManageRoles/string-guid-id
+    // GET: /Admin/ManageRoles/str guid
     [HttpGet]
     public async Task<IActionResult> ManageRoles(string id)
     {
@@ -519,12 +518,12 @@ public class AdminController : Controller
             .Select(r => r.RoleName)
             .ToList();
 
-        // Calcular o que adicionar e o que remover
+        // calcular o que adicionar e o que remover
         var rolesToAdd = newRoles.Except(currentRoles).ToList();
         var rolesToRemove = currentRoles.Except(newRoles).ToList();
 
-        // Executar as alterações
-        // TempData para feedback na próxima página
+        
+        //TempData como feedback na próx pág
         try
         {
             if (rolesToAdd.Any())

@@ -15,7 +15,7 @@ public class LoginViewModel
     [Display(Name = "Lembrar-me?")]
     public bool RememberMe { get; set; }
 
-    // Este campo será preenchido pelo sistema (query string) 
-    // para podermos redirecionar o utilizador de volta após o login.
+    
+    // para  redirecionar após o login
     public string? ReturnUrl { get; set; }
 }

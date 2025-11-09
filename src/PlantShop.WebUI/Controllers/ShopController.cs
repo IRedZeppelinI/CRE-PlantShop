@@ -69,7 +69,7 @@ public class ShopController : Controller
             if (article == null)
             {
                 _logger.LogWarning("Tentativa de aceder a detalhes de artigo não existente (Id: {Id})", id);
-                return NotFound(); // Retorna uma página 404
+                return NotFound();
             }
 
             return View(article); 

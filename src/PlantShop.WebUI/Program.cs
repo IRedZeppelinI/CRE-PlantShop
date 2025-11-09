@@ -6,24 +6,25 @@ using PlantShop.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//configurar injeção de dependencias de application e infrastructure
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+//cookie de sessão
 builder.Services.AddDistributedMemoryCache(); 
 builder.Services.AddSession(options =>
-{
-    // A sessão expira após 20 minutos de inatividade
+{    
     options.IdleTimeout = TimeSpan.FromMinutes(20);
-    // Garante que o cookie de sessão é essencial para o RGPD
+    
     options.Cookie.IsEssential = true;
 });
 
 var app = builder.Build();
 
-// Seed the database
+//seed da database
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -41,7 +42,7 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while seeding the database.");
-        throw; // Falhar no arranque é preferível se o seed falhar
+        throw; 
     }
 }
 

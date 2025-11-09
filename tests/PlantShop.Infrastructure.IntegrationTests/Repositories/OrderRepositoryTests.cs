@@ -3,10 +3,6 @@ using PlantShop.Domain.Entities;
 using PlantShop.Domain.Entities.Shop;
 using PlantShop.Infrastructure.Persistence;
 using PlantShop.Infrastructure.Persistence.Repositories;
-using System.Linq;
-using System.Threading.Tasks;
-using Xunit;
-using System.Collections.Generic; // For List
 
 namespace PlantShop.Infrastructure.IntegrationTests.Repositories;
 
@@ -21,9 +17,9 @@ public class OrderRepositoryTests : IAsyncLifetime
     private Category _seedCategory = null!;
     private Article _seedArticle1 = null!;
     private Article _seedArticle2 = null!;
-    private Order _seedOrder1User1 = null!; // Order with 2 items
-    private Order _seedOrder2User1 = null!; // Order with 1 item
-    private Order _seedOrder1User2 = null!; // Order for another user
+    private Order _seedOrder1User1 = null!; // Order com 2 items
+    private Order _seedOrder2User1 = null!; // Order com 1 item
+    private Order _seedOrder1User2 = null!; 
 
     public OrderRepositoryTests()
     {
@@ -112,11 +108,11 @@ public class OrderRepositoryTests : IAsyncLifetime
         Assert.True(results.All(o => o.UserId == userId));
         Assert.Contains(results, o => o.Id == _seedOrder1User1.Id);
         Assert.Contains(results, o => o.Id == _seedOrder2User1.Id);
-        Assert.DoesNotContain(results, o => o.Id == _seedOrder1User2.Id); // Ensure user2 order not included
-        Assert.Equal(_seedOrder2User1.Id, results.First().Id); // Check ordering (most recent first)
+        Assert.DoesNotContain(results, o => o.Id == _seedOrder1User2.Id); 
+        Assert.Equal(_seedOrder2User1.Id, results.First().Id); 
         Assert.Equal(_seedOrder1User1.Id, results.Last().Id);
-        Assert.All(results, o => Assert.NotNull(o.User)); // Check user included
-        Assert.All(results, o => Assert.Empty(o.OrderItems)); // Check items NOT included by default
+        Assert.All(results, o => Assert.NotNull(o.User)); 
+        Assert.All(results, o => Assert.Empty(o.OrderItems)); 
     }
 
     [Fact]
@@ -154,21 +150,20 @@ public class OrderRepositoryTests : IAsyncLifetime
         var results = await _repository.GetAllOrdersAsync();
 
         Assert.NotNull(results);
-        Assert.Equal(3, results.Count()); // Should return all 3 seeded orders
-        Assert.Equal(_seedOrder1User2.Id, results.First().Id); // Most recent (user2)
+        Assert.Equal(3, results.Count()); 
+        Assert.Equal(_seedOrder1User2.Id, results.First().Id); 
         Assert.Equal(_seedOrder2User1.Id, results.Skip(1).First().Id);
-        Assert.Equal(_seedOrder1User1.Id, results.Last().Id); // Oldest (user1)
-        Assert.All(results, o => Assert.NotNull(o.User)); // Check user included
-        Assert.All(results, o => Assert.Empty(o.OrderItems)); // Check items NOT included
+        Assert.Equal(_seedOrder1User1.Id, results.Last().Id); 
+        Assert.All(results, o => Assert.NotNull(o.User)); 
+        Assert.All(results, o => Assert.Empty(o.OrderItems)); 
     }
 
     [Fact]
     [Trait("Order", "Integration")]
     public async Task GetAllOrdersAsync_WhenNoOrdersExist_ShouldReturnEmptyList()
-    {
-        // Recreate context to ensure clean slate for this specific test
-        await DisposeAsync(); // Dispose current context
-        using var localContext = DbContextFactory.Create(); // Creates new empty DB
+    {        
+        await DisposeAsync(); 
+        using var localContext = DbContextFactory.Create(); 
         var localRepository = new OrderRepository(localContext);
 
         var results = await localRepository.GetAllOrdersAsync();
@@ -226,18 +221,17 @@ public class OrderRepositoryTests : IAsyncLifetime
         var orderId = _seedOrder1User2.Id; // Get ID of the "Pending" order
         _context.ChangeTracker.Clear();
 
-        // Load the existing order (important!)
+        
         var orderToUpdate = await _context.Orders.FindAsync(orderId);
         Assert.NotNull(orderToUpdate);
 
-        // Modify the status
+        
         orderToUpdate.OrderStatus = "Processing";
 
-        // Act: Call UpdateAsync (marks as Modified) and SaveChanges
-        await _repository.UpdateAsync(orderToUpdate); // Update takes the modified entity
-        await _context.SaveChangesAsync(); // Commit
+        
+        await _repository.UpdateAsync(orderToUpdate); 
+        await _context.SaveChangesAsync(); 
 
-        // Assert
         _context.ChangeTracker.Clear();
         var updatedOrder = await _context.Orders.FindAsync(orderId);
         Assert.NotNull(updatedOrder);
@@ -259,11 +253,11 @@ public class OrderRepositoryTests : IAsyncLifetime
         var orderEntity = await _context.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.Id == orderIdToDelete);
         Assert.NotNull(orderEntity);
 
-        // Act
-        await _repository.DeleteAsync(orderEntity); // Mark Order as Deleted
-        await _context.SaveChangesAsync(); // Commit (Cascade delete should happen here)
+        
+        await _repository.DeleteAsync(orderEntity); 
+        await _context.SaveChangesAsync(); 
 
-        // Assert
+        
         var deletedOrder = await _context.Orders.FindAsync(orderIdToDelete);
         Assert.Null(deletedOrder); // Order should be gone
 

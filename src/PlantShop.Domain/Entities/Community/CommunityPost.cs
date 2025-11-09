@@ -8,7 +8,7 @@ public class CommunityPost
         
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public string ImageUrl { get; set; } = string.Empty; // Foto do pedido de ajuda
+    public string ImageUrl { get; set; } = string.Empty; 
     public DateTime CreatedAt { get; set; }
         
     public ICollection<PostComment> Comments { get; set; } = new List<PostComment>();

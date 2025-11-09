@@ -62,7 +62,7 @@ public class ArticleService : IArticleService
             throw new ArgumentException("A valid CategoryId must be provided.", nameof(articleDto.CategoryId));            
         }
 
-        //Verificar se a Categoria existe na BD
+        //Verse a Categoria existe na BD
         var categoryExists = await _unitOfWork.Categories.GetByIdAsync(articleDto.CategoryId, cancellationToken) != null;
         if (!categoryExists)
         {            

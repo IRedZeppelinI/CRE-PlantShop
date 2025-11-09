@@ -6,7 +6,7 @@ public class Order
 
     public string UserId { get; set; } = string.Empty;
     
-    public AppUser User { get; set; } = null!; //Para não usar User User
+    public AppUser User { get; set; } = null!; 
 
     public DateTime OrderDate { get; set; }
     public string OrderStatus { get; set; } = string.Empty;

@@ -26,8 +26,7 @@ public class CommunityController : Controller
         _logger = logger;
     }
 
-    
-    // GET: /comunidade
+        
     [HttpGet]
     [Route("")]
     [Route("index")]
@@ -72,7 +71,7 @@ public class CommunityController : Controller
         return View(challenge);
     }
 
-    // GET: /comunidade/criar
+    
     [HttpGet("criar")]
     [Authorize]
     public IActionResult CreatePost()
@@ -80,7 +79,7 @@ public class CommunityController : Controller
         return View(new CommunityPostCreateViewModel());
     }
 
-    // POST: /comunidade/criar
+    
     [HttpPost("criar")]
     [Authorize]
     [ValidateAntiForgeryToken]
@@ -116,7 +115,7 @@ public class CommunityController : Controller
 
             _logger.LogInformation("Novo Community Post {PostId} criado por {UserId}", createdPost.Id, user.Id);
 
-            // Redirecionar para pág d novo post
+            //redirecionar para pág d novo post
             return RedirectToAction(nameof(PostDetails), new { id = createdPost.Id });
         }
         catch (Exception ex)
@@ -128,7 +127,7 @@ public class CommunityController : Controller
     }
 
     
-    // GET: /comunidade/post/guid-id
+   
     [HttpGet("post/{id:guid}")]
     public async Task<IActionResult> PostDetails(Guid id)
     {
@@ -147,8 +146,7 @@ public class CommunityController : Controller
         return View(viewModel);
     }
 
-    //para comentar post
-    // POST: /comunidade/post/guid-id 
+    //para comentar post    
     [HttpPost("post/{id:guid}")]
     [Authorize]
     [ValidateAntiForgeryToken]
@@ -188,8 +186,7 @@ public class CommunityController : Controller
     }
 
 
-    // tentar advinhar challenge 
-    // POST: /comunidade/submeter-palpite
+    // tentar advinhar challenge     
     [HttpPost("submeter-palpite")]
     [Authorize]
     [ValidateAntiForgeryToken]

@@ -22,8 +22,8 @@ public class ServiceBusPublisher : IMessagePublisher
         _serviceBusClient = serviceBusClient;
         _configuration = configuration;
         _logger = logger;
-
-        // Obter o nome da queue a partir da configuração em appsettings.json
+        
+        
         _queueName = _configuration["AzureServiceBus:QueueName"]
                      ?? throw new ArgumentNullException(
                          nameof(_queueName), "QueueName não está configurado em AzureServiceBus.");
@@ -38,22 +38,21 @@ public class ServiceBusPublisher : IMessagePublisher
             return;
         }
 
-        // Criar o sender 
+        
         await using var sender = _serviceBusClient.CreateSender(_queueName);
 
         try
-        {
-            //Serializar o DTO para JSON
+        {            
             string messageBody = JsonSerializer.Serialize(orderMessage);
 
-            //Criar a mensagem do Service Bus
+            
             var serviceBusMessage = new ServiceBusMessage(messageBody)
             {
-                // Definir um ID de mensagem para rastreabilidade
+                // ID de mensagem para rastreabilidade
                 MessageId = $"order-{orderMessage.OrderId}"
             };
 
-            // Enviar a mensagem
+            
             _logger.LogInformation(
                 "A enviar mensagem para a queue {QueueName}. OrderId: {OrderId}",
                 _queueName,
@@ -67,7 +66,7 @@ public class ServiceBusPublisher : IMessagePublisher
                 ex,
                 "Erro ao publicar mensagem para a queue {QueueName}. OrderId: {OrderId}",
                 _queueName, orderMessage.OrderId);
-            // TODO se tiver tempo, implementar 'dead-letter' local
+            
             throw;
         }
     }

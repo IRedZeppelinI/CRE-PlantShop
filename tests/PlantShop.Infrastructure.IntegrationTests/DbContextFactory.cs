@@ -17,8 +17,7 @@ public static class DbContextFactory
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            //.UseSqlServer(connectionString,                
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()            
             .UseNpgsql(connectionString,
                 b => b.MigrationsAssembly("PlantShop.Infrastructure")
             )

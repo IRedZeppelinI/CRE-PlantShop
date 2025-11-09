@@ -11,11 +11,11 @@ public class CosmosDbContext
     private readonly ILogger<CosmosDbContext> _logger;
     private readonly string _databaseName;
 
-    // Nomes dos Containers
+    // nones dos containers
     private readonly string _postsContainerName;
     private readonly string _challengesContainerName;
 
-    // Propriedades públicas para os repositórios usarem
+    // props para uso
     public Container CommunityPostsContainer { get; }
     public Container DailyChallengesContainer { get; }
 
@@ -36,17 +36,13 @@ public class CosmosDbContext
         _challengesContainerName = configuration["CosmosDbSettings:DailyChallengesContainer"]
             ?? throw new ArgumentNullException("CosmosDbSettings:DailyChallengesContainer");
 
-        // Obter as referências aos containers
-        // (A criação é feita num método Async separado)
+        
         var database = _cosmosClient.GetDatabase(_databaseName);
         CommunityPostsContainer = database.GetContainer(_postsContainerName);
         DailyChallengesContainer = database.GetContainer(_challengesContainerName);
     }
 
-    /// <summary>
-    /// Método de 'arranque' para garantir que a BD e os Containers existem.
-    /// Deve ser chamado no arranque da aplicação.
-    /// </summary>
+    //para corre  no arranque da app
     public async Task InitializeDatabaseAsync()
     {
         try
@@ -56,7 +52,7 @@ public class CosmosDbContext
             var databaseResponse = await _cosmosClient.CreateDatabaseIfNotExistsAsync(_databaseName);
             var database = databaseResponse.Database;
 
-            
+            //DB e containers já criados com terraform
             await database.CreateContainerIfNotExistsAsync(
                 new ContainerProperties
                 {

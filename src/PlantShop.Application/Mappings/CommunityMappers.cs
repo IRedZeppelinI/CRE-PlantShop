@@ -5,8 +5,7 @@ namespace PlantShop.Application.Mappings;
 
 
 internal static class CommunityMappers
-{
-    // --- Posts e Comentários ---
+{    
 
     public static PostCommentDto ToDto(this PostComment entity)
     {
@@ -34,8 +33,7 @@ internal static class CommunityMappers
             Comments = entity.Comments.Select(c => c.ToDto()).ToList()
         };
     }
-
-    // --- Desafios e Palpites ---
+        
 
     public static ChallengeGuessDto ToDto(this ChallengeGuess entity)
     {
@@ -48,33 +46,7 @@ internal static class CommunityMappers
             IsCorrect = entity.IsCorrect
         };
     }
-
-    //public static DailyChallengeDto ToDto(this DailyChallenge entity, string? currentUserId = null)
-    //{
-    //    var dto = new DailyChallengeDto
-    //    {
-    //        Id = entity.Id,
-    //        ChallengeDate = entity.ChallengeDate,
-    //        ImageUrl = entity.ImageUrl,
-    //        // A resposta correta só é revelada se o utilizador já adivinhou ou seo Admin adicionar
-    //        CorrectPlantName = "", // Por defeito não é revelado
-    //        Guesses = (entity.Guesses ?? new List<ChallengeGuess>())
-    //                    .Select(g => g.ToDto())
-    //                    .ToList()
-    //    };
-
-    //    // Verificar se o utilizador atual já adivinhou
-    //    var currentUserGuess = (entity.Guesses ?? new List<ChallengeGuess>())
-    //                             .FirstOrDefault(g => g.UserId == currentUserId);
-    //    if (currentUserGuess != null)
-    //    {
-    //        dto.HasCurrentUserGuessed = true;
-    //        // Se já adivinhou (certo ou errado), revela a resposta
-    //        dto.CorrectPlantName = entity.CorrectPlantName;
-    //    }
-
-    //    return dto;
-    //}
+    
 
     public static DailyChallengeDto ToDto(this DailyChallenge entity, string? currentUserId = null)
     {

@@ -31,7 +31,7 @@ public class CartController : Controller
         var viewModel = new CartViewModel
         {
             Items = cartItems
-            // O Subtotal e Total são calculados automaticamente pelo ViewModel
+            // o viewModel calculaa o total
         };
 
         return View(viewModel);
@@ -109,7 +109,7 @@ public class CartController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Update(int articleId, int quantity)
     {
-        // Se a quantidade for 0 ou menos, tratamos como uma remoção
+        // se a quantidade for 0 ou menos usa o Remove
         if (quantity <= 0)
         {
             return Remove(articleId);
@@ -130,7 +130,7 @@ public class CartController : Controller
 
 
 
-    // Obtém o carrinho da sessão. Se não existir, cria um novo.    
+    // vai buscar carrinho da sessão. Se não existir, cria um novo.    
     private List<CartItemViewModel> GetCartFromSession()
     {
         
