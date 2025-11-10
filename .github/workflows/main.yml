@@ -88,6 +88,9 @@ jobs:
     needs: build-and-test
     runs-on: self-hosted
 
+    env: 
+      RUN_IMAGE_SEED: true
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -111,6 +114,16 @@ jobs:
       env:
         ConnectionStrings__DefaultConnection: ${{ secrets.AZURE_POSTGRES_CONNECTION }}
       run: dotnet ef database update --project .\src\PlantShop.Infrastructure\PlantShop.Infrastructure.csproj --startup-project .\src\PlantShop.WebUI\PlantShop.WebUI.csproj
+
+      #Fazer seed das imagens dos articles necessários para o data seed
+    - name: Upload Seed Images to Blob Storage
+      if: env.RUN_IMAGE_SEED == 'true'
+      run: |
+        az storage blob upload-batch `
+          --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION }}" `
+          --source ./seed-images `
+          --destination articles `
+          --overwrite true
 
     # Login Docker
     - name: Log in to Docker Hub

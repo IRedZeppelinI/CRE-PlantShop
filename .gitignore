@@ -47,6 +47,12 @@ $RECYCLE.BIN/
 *.log
 *.log.*
 
+#Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+
 
 *.zip
 *.rar

@@ -10,9 +10,12 @@ tests/
 .vscode/
 *.sln.DotSettings.user
 
+terraform/
 *.tfstate
 *.tfstate.backup
 .terraform/
+
+seed-images/
 
 Dockerfile
 .dockerignore
