@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Azure.Storage.Blobs;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PlantShop.Domain.Entities;
 using PlantShop.Domain.Entities.Shop;
+using System.Configuration;
 using System.Diagnostics; 
 
 namespace PlantShop.Infrastructure.Persistence;
@@ -11,12 +14,13 @@ public static class DataSeeder
     public static async Task SeedAsync(
         ApplicationDbContext context,
         RoleManager<IdentityRole> roleManager,
-        UserManager<AppUser> userManager)
+        UserManager<AppUser> userManager,
+        BlobServiceClient blobClient)
     {              
                 
         await SeedRolesAsync(roleManager);
         await SeedAdminUserAsync(userManager);
-        await SeedShopDataAsync(context);
+        await SeedShopDataAsync(context, blobClient);
     }
 
     private static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
@@ -69,8 +73,14 @@ public static class DataSeeder
         }
     }
 
-    private static async Task SeedShopDataAsync(ApplicationDbContext context)
-    {        
+    private static async Task SeedShopDataAsync(ApplicationDbContext context, BlobServiceClient blobClient)
+    {
+        var storageEndpoint = blobClient.Uri.ToString();
+        if (storageEndpoint.EndsWith("/"))
+        {
+            storageEndpoint = storageEndpoint.Substring(0, storageEndpoint.Length - 1);
+        }
+
         if (await context.Categories.AnyAsync())
         {
             Debug.WriteLine("Shop data (Categories/Articles) already exists. Skipping seed.");
@@ -110,7 +120,7 @@ public static class DataSeeder
                 StockQuantity = 50,
                 CategoryId = catFlores.Id,
                 IsFeatured = true,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/rosa_vermelha.jpg" },
+                ImageUrl = $"{storageEndpoint}/articles/rosa_vermelha.jpg" },
 
             new Article { Name = "Orquídea Phalaenopsis",
                 Description = "Orquídea elegante de fácil cuidado.",
@@ -118,7 +128,7 @@ public static class DataSeeder
                 StockQuantity = 30,
                 CategoryId = catFlores.Id,
                 IsFeatured = true,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/orquidea_phalaenopsis.jpg" },
+                ImageUrl = $"{storageEndpoint}/articles/orquidea_phalaenopsis.jpg" },
 
                         
             new Article { Name = "Lírio Branco",
@@ -126,14 +136,14 @@ public static class DataSeeder
                 Price = 12.50m,
                 StockQuantity = 40,
                 CategoryId = catFlores.Id,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/lirio_branco.jpg"},
+                ImageUrl = $"{storageEndpoint}/articles/lirio_branco.jpg"},
 
             new Article { Name = "Echeveria Elegans",
                 Description = "Suculenta em forma de roseta.",
                 Price = 5.99m,
                 StockQuantity = 100,
                 CategoryId = catSuculentas.Id,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/echeveria_elegans.jpg" },
+                ImageUrl = $"{storageEndpoint}/articles/echeveria_elegans.jpg" },
 
             new Article { Name = "Sedum Morganianum (Dedo-de-moça)",
                 Description = "Suculenta pendente com folhas carnudas.",
@@ -141,35 +151,35 @@ public static class DataSeeder
                 StockQuantity = 60,
                 CategoryId = catSuculentas.Id,
                 IsFeatured = true,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/sedum_morganianum.jpg" },
+                ImageUrl = $"{storageEndpoint}/articles/sedum_morganianum.jpg" },
 
             new Article { Name = "Aloe Vera",
                 Description = "Planta com propriedades medicinais.",
                 Price = 7.00m,
                 StockQuantity = 80,
                 CategoryId = catSuculentas.Id,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/aloe_vera.jpg" },
+                ImageUrl = $"{storageEndpoint}/articles/aloe_vera.jpg" },
 
             new Article { Name = "Vaso de Cerâmica (Pequeno)",
                 Description = "Vaso decorativo para plantas pequenas.",
                 Price = 4.50m,
                 StockQuantity = 150,
                 CategoryId = catAcessorios.Id,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/vaso_ceramica_p.jpg"},
+                ImageUrl = $"{storageEndpoint}/articles/vaso_ceramica_p.jpg"},
 
             new Article { Name = "Substrato Universal (5L)",
                 Description = "Terra adequada para a maioria das plantas.",
                 Price = 3.99m,
                 StockQuantity = 200,
                 CategoryId = catAcessorios.Id,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/substrato_universal.jpg" },
+                ImageUrl = $"{storageEndpoint}/articles/substrato_universal.jpg" },
 
             new Article { Name = "Fertilizante Líquido (250ml)",
                 Description = "Nutrientes essenciais para o crescimento.",
                 Price = 6.20m,
                 StockQuantity = 120,
                 CategoryId = catAcessorios.Id,
-                ImageUrl = "https://crepedroplantshop123dfgr.blob.core.windows.net/articles/fertilizante_liquido.jpg" }
+                ImageUrl = $"{storageEndpoint}/articles/fertilizante_liquido.jpg" }
         };
 
         await context.Articles.AddRangeAsync(articles);

@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Identity;
 using PlantShop.Application;
 using PlantShop.Domain.Entities;
@@ -34,9 +35,9 @@ using (var scope = app.Services.CreateScope())
 
         var userManager = services.GetRequiredService<UserManager<AppUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var blobClient = services.GetRequiredService<BlobServiceClient>();
 
-        
-        await DataSeeder.SeedAsync(context, roleManager, userManager);
+        await DataSeeder.SeedAsync(context, roleManager, userManager, blobClient);
     }
     catch (Exception ex)
     {
