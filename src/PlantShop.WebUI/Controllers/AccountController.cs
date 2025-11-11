@@ -5,7 +5,7 @@ using PlantShop.WebUI.Models.Account;
 
 namespace PlantShop.WebUI.Controllers;
 
-[Route("conta")]
+
 public class AccountController : Controller
 {
     private readonly UserManager<AppUser> _userManager;
@@ -23,8 +23,7 @@ public class AccountController : Controller
     }
 
     //  REGISTO     
-    [HttpGet]
-    [Route("registar")]
+    [HttpGet]    
     public IActionResult Register()
     {
         return View();
@@ -72,8 +71,7 @@ public class AccountController : Controller
 
     //LOGIN   
 
-    [HttpGet]
-    [Route("login")]
+    [HttpGet]    
     public IActionResult Login(string? returnUrl = null)
     {        
         ViewData["ReturnUrl"] = returnUrl;
@@ -81,8 +79,7 @@ public class AccountController : Controller
     }
 
     [HttpPost]
-    [ValidateAntiForgeryToken]
-    [Route("login")]
+    [ValidateAntiForgeryToken]    
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         // Atribui o returnUrl do ViewData (caso o modelo falhe) ou do próprio modelo.
@@ -137,8 +134,7 @@ public class AccountController : Controller
     //LOGOUT
 
     [HttpPost]
-    [ValidateAntiForgeryToken]
-    [Route("logout")]
+    [ValidateAntiForgeryToken]    
     public async Task<IActionResult> Logout()
     {
         await _signInManager.SignOutAsync();
