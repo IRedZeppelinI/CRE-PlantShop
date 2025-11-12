@@ -30,8 +30,7 @@ public class AccountController : Controller
     }
 
     [HttpPost]    
-    [ValidateAntiForgeryToken]
-    [Route("registar")]
+    [ValidateAntiForgeryToken]    
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
         if (!ModelState.IsValid)
