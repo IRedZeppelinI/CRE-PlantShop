@@ -113,7 +113,7 @@ A *pipeline* de CI/CD precisa de secrets para aceder aos serviços. É necessár
   * `DOCKERHUB_TOKEN` (Um *Personal Access Token* gerado no Docker Hub e fornecido neste caso por email na entrega do projecto).
 
 **Outputs do Terraform:**
-Estes são os valores que a *pipeline* precisa de saber para correr as migrações e o *deploy*. É necessário obtê-los da *output* do `terraform apply` (ou com `terraform output [nome]` para as connection strings uma vez que estão marcadas como <sensitive> no terraform) e adicioná-los como *secrets*.
+Estes são os valores que a *pipeline* precisa de saber para correr as migrações e o *deploy*. É necessário obtê-los da *output* do `terraform apply` (ou com `terraform output [nome]` para as connection strings uma vez que estão marcadas como *sensitive* no terraform) e adicioná-los como *secrets* no GiHub.
 
   * `AZURE_POSTGRES_CONNECTION`: (Necessário para o `dotnet ef database update`). Utilizar **postgres_connection_string_keyvalue** em vez de postgres_connection_string_uri!
   * `AZURE_STORAGE_CONNECTION`: (Necessário para o *seed* das imagens).
