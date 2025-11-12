@@ -88,11 +88,11 @@ Para executar a pipeline o agente local necessita de:
 
 A infraestrutura é criada *uma vez* através do Terraform. Tendo em conta a necessidade credenciais de um Service Principal do Azure, para evitar commits acidentais, recomendo o seguinte:
 
-1.  Copie a pasta /terraform deste projeto para um local seguro fora do repositório Git.
-2.  Navegue para essa nova pasta copiada.
-3.  Edite o ficheiro providers.tf e preencha as credenciais do seu Service Principal.
-4.  Execute terraform init para inicializar os providers.
-5.  Execute terraform apply e confirme com yes. (Irá solicitar o token de Docker hub e username fornecidos à parte por email)
+1.  Copiar a pasta /terraform deste projeto para um local seguro fora do repositório Git.
+2.  Navegar para essa nova pasta copiada.
+3.  Editar o ficheiro providers.tf e preencher com as credenciais do respectivo Service Principal.
+4.  Executar terraform init para inicializar os providers.
+5.  Executar terraform apply e confirmar com yes. (Irá solicitar o token de Docker hub e username fornecidos à parte por email)
 
 O Terraform irá criar todos os serviços Azure. Além disso, o terraform irá configurar o App Service com todas as **Env Variables** necessárias (como as *connection strings* do CosmosDB, ServiceBus, etc.) automaticamente.
 
